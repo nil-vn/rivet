@@ -44,6 +44,13 @@ cargo check --locked --workspace --all-targets
 cargo test --locked --workspace
 ```
 
+Distributed compile và Ballista scheduler/executor loopback smoke test cần `protoc`:
+
+```bash
+./scripts/check-wsl.sh --distributed
+cargo test --locked --features distributed --test distributed_smoke
+```
+
 Workspace hiện ở dưới `/mnt/c` phù hợp functional testing nhưng không phù hợp HPC benchmark. Xem [hướng dẫn Linux/WSL](docs/development/wsl-setup.md) trước khi đo I/O hoặc throughput.
 
 ## Pháp lý trước khi public OSS

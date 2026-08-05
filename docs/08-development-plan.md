@@ -20,7 +20,7 @@ Trạng thái thực thi ngày 2026-08-05:
 - MIT License; DCO 1.1 dành cho external contributions khi mở OSS.
 - Linux x86_64/WSL2 là platform bootstrap.
 - `WP-001` scaffold đã được thiết lập.
-- `WP-010` đã pass local/Flight SQL/S3/Wasm/Python compile; distributed và runtime round-trip spikes còn mở.
+- `WP-010` đã pass local/Flight SQL/S3/Wasm/Python/distributed compile và Ballista standalone loopback query; PyArrow round trip và Ballista multi-process remote query còn mở.
 - `ADR-0001` đã khóa dependency BOM/MSRV baseline.
 
 ## 2. Kết quả delivery
@@ -245,7 +245,7 @@ WP này không block private/internal engineering, nhưng block public code inta
 - Compile matrix cho local, Flight SQL, Wasm, Python và distributed features.
 - `cargo tree` evidence cho Arrow/DataFusion/Ballista/PyO3 type universe.
 - Spike DataFusion `RecordBatch` → Parquet.
-- Spike Ballista remote query.
+- Spike Ballista standalone loopback query; tiếp theo là remote multi-process query.
 - Spike PyArrow C Stream round trip.
 - Spike Wasmtime component resource limits.
 - ADR cho BOM/MSRV/feature policy.
@@ -1285,7 +1285,7 @@ Mỗi release candidate phải có:
 Thứ tự issue nên mở đầu tiên:
 
 1. `WP-000`: trước public launch, hoàn tất trademark, public identities và security contacts.
-2. `WP-010`: distributed compile, PyArrow round trip và Ballista remote-query spikes.
+2. `WP-010`: PyArrow round trip và Ballista remote multi-process query spikes; distributed compile/standalone loopback đã pass.
 3. `WP-020`: ADR-0002 event/materialized state.
 4. `WP-020`: ADR-0003 artifact/checkpoint/manifest ordering.
 5. `WP-020`: ADR-0004 memory permits/resource budget.

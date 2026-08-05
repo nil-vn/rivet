@@ -45,7 +45,10 @@ Script kiểm tra không tự cài hoặc thay đổi system:
 
 ```bash
 ./scripts/check-wsl.sh
+./scripts/check-wsl.sh --distributed
 ```
+
+Profile `--distributed` coi `protoc` là prerequisite bắt buộc; bootstrap local mặc định chỉ báo notice nếu chưa có.
 
 ## 4. Rust toolchain
 
@@ -86,6 +89,7 @@ cargo check --locked --features wasm
 cargo check --locked --features python
 cargo check --locked --features s3
 cargo check --locked --features distributed
+cargo test --locked --features distributed --test distributed_smoke
 ```
 
 ## 6. WSL resource configuration
@@ -112,7 +116,7 @@ Ghi WSL kernel, CPU, RAM, filesystem và mount path vào benchmark manifest.
 
 ### `protoc` không tìm thấy
 
-Cài `protobuf-compiler`; chỉ bắt buộc khi control/distributed protocol build script được bật.
+Cài `protobuf-compiler`; bắt buộc cho distributed profile vì Ballista scheduler/executor kéo Substrait protocol generation.
 
 ### Python feature không compile
 

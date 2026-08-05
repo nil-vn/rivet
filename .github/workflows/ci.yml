@@ -45,10 +45,19 @@ jobs:
           - s3
           - wasm
           - python
+          - distributed
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.97.1 --profile minimal
+      - name: Install distributed build prerequisites
+        if: matrix.features == 'distributed'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes protobuf-compiler
       - name: Compile feature profile
         run: cargo +1.97.1 check --locked --features "${{ matrix.features }}"
+      - name: Run distributed loopback smoke test
+        if: matrix.features == 'distributed'
+        run: cargo +1.97.1 test --locked --features distributed --test distributed_smoke

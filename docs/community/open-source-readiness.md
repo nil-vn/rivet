@@ -50,8 +50,9 @@ MIT là software license. DCO là certification về quyền gửi contribution,
 - [ ] Public development setup works from clean clone.
 - [ ] First `good-first-issue` path.
 - [ ] Stable test fixtures nhỏ và legal-to-redistribute.
-- [x] CI baseline cho minimal/local/Flight SQL/S3/Wasm/Python và WSL setup đã được document.
-- [ ] Mở rộng CI cho distributed sau khi Ballista compile/runtime spike pass.
+- [x] CI baseline cho minimal/local/Flight SQL/S3/Wasm/Python/distributed và WSL setup đã được document.
+- [x] Distributed CI compile và Ballista standalone scheduler/executor loopback smoke test.
+- [ ] Thêm Ballista multi-process/multi-node qualification trước distributed beta.
 - [ ] English translation cho contributor-facing/architecture docs nếu community quốc tế là mục tiêu.
 
 ## 5. Release readiness

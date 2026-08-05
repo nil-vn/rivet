@@ -24,8 +24,10 @@ flight-sql = [
 distributed = [
     "flight-sql",
     "dep:ballista",
+    "ballista/standalone",
     "dep:prost",
     "dep:prost-types",
+    "dep:tokio",
     "dep:tonic",
 ]
 wasm = ["dep:wasmtime", "dep:wasmtime-wasi"]
@@ -49,6 +51,7 @@ parquet = { version = "58.3", default-features = false, features = ["arrow", "as
 prost = { version = "0.14", optional = true }
 prost-types = { version = "0.14", optional = true }
 tonic = { version = "0.14", default-features = false, features = ["transport", "tls-ring"], optional = true }
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "time"], optional = true }
 
 pyo3 = { version = "0.28.3", features = ["auto-initialize"], optional = true }
 wasmtime = { version = "47.0", default-features = false, features = ["async", "component-model", "cranelift", "runtime"], optional = true }

@@ -4,6 +4,16 @@ set -euo pipefail
 # Keep this script read-only: it reports missing prerequisites but does not install packages.
 
 failures=0
+profile="${1:-bootstrap}"
+
+case "${profile}" in
+    bootstrap|--distributed)
+        ;;
+    *)
+        printf 'usage: %s [--distributed]\n' "$0"
+        exit 2
+        ;;
+esac
 
 check_required() {
     local command_name="$1"
@@ -51,8 +61,13 @@ check_required gcc
 check_optional clang
 check_optional cmake
 check_optional pkg-config
-check_optional protoc
 check_optional python3
+
+if [[ "${profile}" == "--distributed" ]]; then
+    check_required protoc
+else
+    check_optional protoc
+fi
 
 if (( failures > 0 )); then
     printf 'failed   %d required prerequisite(s) are missing\n' "${failures}"

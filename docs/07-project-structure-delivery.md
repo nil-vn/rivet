@@ -185,7 +185,15 @@ publish = false
 default = ["local"]
 local = ["dep:arrow", "dep:datafusion", "dep:object_store", "dep:parquet"]
 flight-sql = ["local", "dep:arrow-flight", "arrow-flight/flight-sql"]
-distributed = ["flight-sql", "dep:ballista", "dep:prost", "dep:tonic"]
+distributed = [
+    "flight-sql",
+    "dep:ballista",
+    "ballista/standalone",
+    "dep:prost",
+    "dep:prost-types",
+    "dep:tokio",
+    "dep:tonic",
+]
 wasm = ["dep:wasmtime", "dep:wasmtime-wasi"]
 python = ["local", "arrow/pyarrow", "dep:pyo3"]
 s3 = ["local", "object_store/aws"]
@@ -351,7 +359,7 @@ Phần này mô tả roadmap kiến trúc ở mức phase. Work packages, depend
 - Prototype local byte-accounted channel.
 - PyArrow C Stream round trip.
 - Wasmtime component limits.
-- Ballista remote query smoke test.
+- Ballista standalone scheduler/executor loopback query smoke test; sau đó remote multi-process test.
 - Benchmark UTF-8/Shift-JIS/UTF-16 decode + CSV parse.
 
 Exit criteria:

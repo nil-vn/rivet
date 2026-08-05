@@ -57,7 +57,8 @@ Rules:
 - Không nâng DataFusion lên 54.x trong distributed feature cho tới khi Ballista-aligned upgrade spike pass.
 - `default = ["local"]`; Flight SQL, S3, Wasm, Python và distributed là explicit features.
 - Minimal `--no-default-features` không kéo Arrow/DataFusion/Ballista/Python/Wasmtime.
-- Python và distributed profiles chỉ được coi supported sau compile/integration spike riêng.
+- Python profile chỉ được coi supported sau PyArrow integration spike riêng.
+- Distributed dependency profile được compile trong CI và có Ballista standalone loopback smoke test; multi-process/multi-node support vẫn cần qualification riêng.
 - Dependency upgrade chạm BOM cần `cargo tree` evidence và ADR update/supersession.
 
 ## Consequences
@@ -78,15 +79,18 @@ cargo check --locked --features flight-sql
 cargo check --locked --features s3
 cargo check --locked --features wasm
 cargo check --locked --features python
+cargo check --locked --features distributed
+cargo test --locked --features distributed --test distributed_smoke
 ```
 
 Chưa hoàn tất tại thời điểm ADR được chấp nhận:
 
 ```text
-cargo check --locked --features distributed
 PyArrow C Stream round trip
-Ballista remote query smoke test
+Ballista multi-process remote query smoke test
 ```
+
+Distributed build cần `protoc` vì Ballista scheduler kéo Substrait protocol generation. Smoke test khởi động scheduler và executor thật trong cùng process, giao tiếp qua loopback, giới hạn hai concurrent tasks, thực thi aggregate query và xác minh Arrow result. Đây chưa phải bằng chứng multi-process, multi-node, recovery hoặc throughput.
 
 ## References
 
