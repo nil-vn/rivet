@@ -12,6 +12,7 @@ Cảm ơn bạn quan tâm tới FurrumX. Dự án đặt correctness, recoverabi
 - `docs/README.md`
 - `docs/01-product-requirements.md`
 - Tài liệu domain liên quan.
+- `docs/development/contributor-architecture.md`
 - `docs/development/performance-quality-gates.md`
 - `docs/development/review-checklist.md`
 
@@ -51,13 +52,14 @@ breaking-change
 ## 3. Development workflow
 
 1. Fork/branch từ current default branch.
-2. Giữ patch focused; tách refactor cơ học khỏi semantic/performance change khi có thể.
-3. Viết test tái hiện bug trước fix.
-4. Viết benchmark trước optimization nếu chưa có benchmark đại diện.
-5. Cập nhật docs/ADR/config examples.
-6. Chạy quality gates.
-7. Self-review bằng review checklist.
-8. Mở PR với evidence đầy đủ.
+2. Chọn owning module, direct dependencies và port boundary theo contributor architecture guide.
+3. Giữ patch focused; tách refactor cơ học khỏi semantic/performance change khi có thể.
+4. Viết test tái hiện bug trước fix.
+5. Viết benchmark trước optimization nếu chưa có benchmark đại diện.
+6. Cập nhật docs/ADR/config examples.
+7. Chạy quality gates.
+8. Self-review bằng review checklist.
+9. Mở PR với evidence đầy đủ.
 
 Không include generated files/binaries/benchmark outputs lớn trừ khi repository policy chỉ định location/format.
 

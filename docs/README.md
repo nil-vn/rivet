@@ -18,6 +18,8 @@ Tài liệu này tổng hợp các requirement, quyết định kiến trúc và
 ## Phát triển và cộng đồng
 
 - [HPC performance và quality gates](development/performance-quality-gates.md)
+- [Khung sườn kiến trúc cho contributor](development/contributor-architecture.md)
+- [Audit scaffold kiến trúc](development/scaffold-audit.md)
 - [Review checklist](development/review-checklist.md)
 - [ADR process](development/adr-process.md)
 - [Agent collaboration và handoff](development/agent-handoff.md)

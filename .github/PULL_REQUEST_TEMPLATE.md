@@ -6,6 +6,12 @@ Mô tả problem, requirement/issue liên quan và explicit non-goals.
 
 Mô tả design/implementation. Link ADR nếu có.
 
+## Architecture fit
+
+- Owning module và work package.
+- Direct module dependencies mới hoặc thay đổi.
+- Port/receipt đi qua boundary; giải thích exception so với contributor architecture guide nếu có.
+
 ## Correctness và recovery
 
 - Ảnh hưởng tới history/checkpoint/resume/artifact/manifest/lease.
@@ -41,6 +47,7 @@ Liệt kê test/feature/platform chưa chạy và lý do.
 ## Checklist
 
 - [ ] Tôi đã đọc `CONTRIBUTING.md` và tài liệu domain liên quan.
+- [ ] Owning module, dependency direction và visibility tuân thủ contributor architecture guide hoặc có ADR/exception được review.
 - [ ] Patch focused và không chứa unrelated changes.
 - [ ] Tests tương xứng correctness/security risk.
 - [ ] Queue/cache/concurrency mới đều bounded.
