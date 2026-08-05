@@ -12,6 +12,7 @@ Các thay đổi đáng chú ý sẽ được ghi trong file này. Dự án đan
 - Ballista scheduler/executor loopback smoke test và distributed CI profile.
 - Accepted ADR-0002 cho hybrid event ledger, transactional materialized state và SQLite WAL local backend.
 - Accepted ADR-0003 cho artifact/checkpoint/manifest ordering, typed metadata unit-of-work, Arrow IPC manifest và conditional current-pointer publication.
+- Accepted ADR-0004 cho fixed task resource envelopes, byte-accounted RAII memory/temp-disk permits và native DataFusion pool integration.
 
 ### Changed
 

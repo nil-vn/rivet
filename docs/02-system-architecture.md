@@ -184,6 +184,8 @@ Sai:
     mỗi query chỉ tạo parallelism tương ứng allocation của nó
 ```
 
+Node governor phải reserve toàn task envelope trước execution. Buffer/file bên trong giữ byte-accounted RAII lease; channel byte-credit là flow-control riêng và không được cộng lần hai vào physical memory. DataFusion dùng native bounded `MemoryPool`/`DiskManager` trong child budget, còn streaming batches ngoài engine pool vẫn giữ external lease. Contract đầy đủ nằm trong [ADR-0004](decisions/0004-byte-accounted-resource-permits.md).
+
 ## 6. Execution modes
 
 ### 6.1 Single-node
@@ -275,13 +277,13 @@ pub trait EdgeTransport: Send + Sync + 'static {
 
 Implementation:
 
-- `LocalEdgeTransport`: bounded channel và memory permit.
+- `LocalEdgeTransport`: bounded item count + byte-credit channel; `AccountedBatch` chuyển physical memory lease cùng ownership.
 - `FlightEdgeTransport`: Flight ticket/DoExchange.
 - `DurableEdgeTransport`: IPC/Parquet artifact trên object store.
 
 `Automatic` được DAG compiler resolve thành ephemeral hoặc durable theo placement và recovery requirement.
 
-`flume` có thể là implementation khởi đầu cho local MPMC channel, nhưng kiến trúc không phụ thuộc nhãn “lock-free”. Contract quan trọng là ownership transfer, bounded bytes, cancellation và backpressure; implementation channel phải được benchmark và có thể thay thế.
+`flume` có thể là implementation khởi đầu cho local MPMC channel, nhưng kiến trúc không phụ thuộc nhãn “lock-free”. Contract quan trọng là ownership transfer, bounded item/credit bytes, cancellation và backpressure; implementation channel phải được benchmark và có thể thay thế. Không tự viết channel/semaphore để né primitive đã có nếu benchmark chưa chứng minh bottleneck.
 
 Transport này thay Kafka trong phạm vi pipeline edge, không phải một distributed event log tổng quát. Nếu use case cần retained topics, consumer groups độc lập, arbitrary replay window và external producers/consumers, đó là capability riêng chứ không được giả lập bằng ephemeral channel.
 

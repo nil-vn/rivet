@@ -132,20 +132,34 @@ Stage có queue đầy là bottleneck hiện tại; upstream phải tự dừng 
 
 ```rust
 #[derive(Debug, Clone)]
-pub struct ExecutorResourceBudget {
+pub struct NodeCapacity {
+    pub effective_memory_bytes: u64,
+    pub managed_memory_bytes: u64,
+    pub safety_headroom_bytes: u64,
+    pub managed_temporary_disk_bytes: u64,
+    pub compute_vcores: u16,
+}
+
+#[derive(Debug, Clone)]
+pub struct TaskResourceEnvelope {
+    pub memory_bytes: u64,
+    pub temporary_disk_bytes: u64,
+    pub compute_vcores: u16,
+}
+
+#[derive(Debug, Clone)]
+pub struct TaskMemoryBudget {
     pub total_memory_bytes: u64,
     pub datafusion_memory_bytes: u64,
     pub input_buffer_bytes: u64,
     pub batch_queue_bytes: u64,
     pub parquet_writer_bytes: u64,
     pub plugin_memory_bytes: u64,
-    pub emergency_headroom_bytes: u64,
-    pub temporary_disk_bytes: u64,
-    pub compute_vcores: u16,
+    pub progress_reserve_bytes: u64,
 }
 ```
 
-Phân bổ baseline:
+Phân bổ baseline trong managed task memory; các range phải được normalize để tổng child budgets không vượt 100%:
 
 | Consumer | Tỷ lệ gợi ý |
 |---|---:|
@@ -154,26 +168,24 @@ Phân bổ baseline:
 | Arrow edge queues | 10–15% |
 | Parquet writers | 15–20% |
 | Control/plugin/other | 5–10% |
-| Emergency headroom | 10–20% |
+| Non-borrowable progress reserve | 5–10% |
 
-Tỷ lệ phải tự điều chỉnh theo workload. DataFusion chỉ accounting các memory consumer lớn đã tích hợp; batches/network/plugin vẫn cần external permits.
+Các range là điểm bắt đầu theo loại workload, không phải các giá trị tối đa dùng đồng thời. Safety headroom mặc định theo ADR-0004 nằm ngoài managed task pools và không được cấp cho normal work. Tổng child budgets không vượt task envelope; tổng live task envelopes không vượt node managed capacity. DataFusion chỉ accounting các memory consumer lớn đã tích hợp; batches/network/plugin vẫn cần external permits.
 
 ### 6.1 Byte-accounted batch
 
 ```rust
-#[derive(Clone)]
-pub struct MemoryPermit {
-    pub reserved_bytes: usize,
-    pub pool: std::sync::Arc<MemoryPermitPool>,
-}
-
 pub struct AccountedBatch {
     pub batch: arrow::record_batch::RecordBatch,
-    pub permit: MemoryPermit,
+    pub allocations: AllocationOwners,
 }
 ```
 
-Permit đi cùng batch và được trả khi downstream drop. Queue capacity theo cả message count và in-flight bytes.
+Node admission reserve fixed task envelope trước execution. Memory lease dùng 4 KiB quantum, temp-disk lease dùng 1 MiB quantum và checked `u64` conversion. Bounded allocation owners đi cùng batch tới last drop; Arrow slice/projection share owners, multi-input composition deduplicate theo lease ID, output materialization acquire lease mới. Queue giữ thêm channel byte-credit riêng, vì credit là flow-control và không được double-charge thành physical memory.
+
+Acquire/grow lease phải xảy ra trước allocation/write. Library API không cho biết output size trước chỉ được gọi dưới bounded maximum operation reservation, rồi shrink/reconcile theo actual conservative size. Count cap vẫn bắt buộc bên cạnh byte cap.
+
+DataFusion child budget dùng native `FairSpillPool`/consumer tracking và built-in temp-directory limit; không acquire global memory lần hai cho internal `MemoryReservation`. Contract normative nằm trong [ADR-0004](decisions/0004-byte-accounted-resource-permits.md).
 
 ### 6.2 Pressure response
 
@@ -188,6 +200,8 @@ Theo thứ tự:
 7. Pause source bằng backpressure.
 8. Load-shed query/run mới.
 9. Fail task rõ ràng trước khi OS OOM-kill.
+
+Pressure state phải có hysteresis. RSS/cgroup và filesystem free-space là secondary guard cho allocator/library/external usage không nằm trọn trong logical permits; safety headroom không được dùng để tiếp tục throughput work.
 
 ## 7. Adaptive batch sizing
 
@@ -283,9 +297,10 @@ DataFusion đã tối ưu pushdown/pruning; custom provider phải báo capabili
 
 ## 11. Out-of-core
 
-- `FairSpillPool` hoặc bounded/tracked DataFusion pool.
+- Native DataFusion `FairSpillPool` + consumer tracking trong admitted child budget; `UnboundedMemoryPool` bị cấm ở supported production profile.
 - Dedicated local NVMe spill directory khi có.
-- Temporary disk quota theo tenant/task.
+- Built-in DataFusion temp-directory size limit bên trong task temp-disk envelope.
+- Temporary disk quota theo node/task; restart leftovers được trừ như recovery debt trước admission.
 - Spill file validation/cleanup.
 - mmap cho immutable local source, không cho mutable/truncatable file.
 - Remote object storage dùng range/vectored reads, không mmap.
@@ -349,7 +364,7 @@ pub struct StreamBudget {
 Application credit flow:
 
 ```text
-receiver memory permit
+receiver channel byte-credit
     → grants credits
     → sender sends bounded batches
     → downstream queue fills
@@ -357,7 +372,7 @@ receiver memory permit
     → sender stops upstream consumption
 ```
 
-Không chỉ dựa vào HTTP/2 window; decoded application buffers vẫn cần accounting.
+Không chỉ dựa vào HTTP/2 window; decoded application buffers vẫn cần physical allocation lease riêng. Credit không được cộng lần hai vào physical memory.
 
 ## 14. Metadata/history at scale
 
@@ -476,8 +491,9 @@ Metrics tối thiểu:
 - Cycles/byte hoặc CPU time/byte.
 - Allocations/row và batch.
 - Queue occupancy/backpressure time.
-- Peak RSS/reserved memory.
+- Peak RSS/reserved/charged memory, channel credit, safety headroom và permit acquire latency.
 - Spill bytes/files/time.
+- Temp-disk reserved/charged/recovery-debt/cleanup bytes.
 - Parquet codec/compression ratio.
 - Row groups/pages pruned.
 - Flight throughput/in-flight bytes.
@@ -539,6 +555,7 @@ Failure injection:
 - Peak RSS nằm trong configured budget plus documented headroom.
 - Không memory growth theo total row count.
 - Không unbounded queue.
+- Tổng admitted envelopes/charged bytes/temp disk không vượt configured hard limits; no permit leaks after cancellation.
 - Không duplicate/loss sau crash/retry.
 - Controller không nhận tabular bytes.
 - 1B-row benchmark hoàn tất.
@@ -557,4 +574,3 @@ Failure injection:
 - [Arrow Parquet parallel row-group reading](https://arrow.apache.org/rust/parquet/arrow/arrow_reader/struct.ArrowReaderBuilder.html)
 - [Ballista tuning](https://datafusion.apache.org/ballista/user-guide/tuning-guide.html)
 - [Tokio CPU-bound tasks](https://docs.rs/tokio/latest/tokio/)
-

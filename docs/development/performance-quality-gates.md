@@ -136,8 +136,13 @@ Hard failures:
 - Writer/parser concurrency không có admission.
 - Low-memory profile OOM trong required test.
 - Spill/temp disk không có quota/cleanup.
+- Allocation/file growth xảy ra trước byte-accounted permit, hoặc queue chỉ bound theo item count.
+- DataFusion dùng unbounded production pool hoặc cùng physical bytes bị charge lại ở global pool.
+- Cancellation/restart leak permit, hoặc disk capacity được trả trước verified delete/durable ownership transfer.
 
 Benchmark memory ở ít nhất hai dataset sizes để phát hiện slope, ví dụ 10M và 100M rows. Với 1B-row release test, RSS phải ổn định quanh configured envelope, không chỉ “chưa OOM”.
+
+Report phải tách configured capacity, admitted task envelopes, physical charged bytes, channel in-flight credits, DataFusion internal reservations, safety headroom, peak RSS/RSS delta và temp recovery debt. Channel credit không phải physical allocation và không được cộng vào RSS estimate; DataFusion child reservation không acquire lại global physical pool.
 
 ## 9. CPU and allocation review
 
@@ -253,6 +258,9 @@ Maintainer có thể từ chối optimization thật sự nhanh hơn nếu lợi
 - [ ] Raw samples/statistics có sẵn.
 - [ ] Correctness output tương đương.
 - [ ] CPU/RSS/allocation/output-size được báo.
+- [ ] Envelope/physical/flow-credit/DataFusion/headroom/temp-debt metrics được tách, không double-account.
+- [ ] Permit ownership, acquire-before-growth, progress reserve và cancellation/drop paths có evidence.
+- [ ] Temp files/restart debt giữ charge tới verified delete hoặc durable-capacity transfer.
 - [ ] Low-resource effect được xem xét.
 - [ ] Distributed/storage side effects được xem xét.
 - [ ] Complexity và portability được giải thích.

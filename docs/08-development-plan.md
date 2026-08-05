@@ -24,6 +24,7 @@ Trạng thái thực thi ngày 2026-08-05:
 - `ADR-0001` đã khóa dependency BOM/MSRV baseline.
 - `ADR-0002` đã chốt hybrid event ledger, immutable fact ledgers và synchronous transactional materialized state.
 - `ADR-0003` đã chốt physical durability → atomic metadata commit → manifest pointer CAS, cùng Arrow IPC full-snapshot manifest và Protobuf pointer.
+- `ADR-0004` đã chốt fixed task envelopes, quantized RAII memory/temp-disk leases, channel byte-credit và native DataFusion resource pools.
 
 ## 2. Kết quả delivery
 
@@ -63,7 +64,7 @@ Mọi work package tạo queue, cache, worker pool, writer hoặc stream phải 
 
 - Byte limit.
 - Concurrency limit.
-- Ownership của memory permit.
+- Ownership của physical allocation lease và ranh giới với channel byte-credit.
 - Backpressure propagation.
 - Cancellation/drop behavior.
 - Temporary disk quota.
@@ -322,18 +323,23 @@ Open question chưa đủ evidence phải có spike owner và decision deadline 
 
 **Deliverables**
 
-- `ExecutorResourceBudget` và validated low/standard profiles.
-- Byte-accounted permit pool.
-- `AccountedBatch` ownership/lifetime.
-- Admission API cho vcore, memory, temporary disk và plugin budgets.
-- Pressure state: normal, throttled, spilling, load-shedding.
+- Node capacity/headroom detection và validated low/standard profiles.
+- Fixed task `ResourceEnvelope` admission cho vcore, managed memory và temporary disk.
+- Tokio-backed quantized `BytePool`/RAII leases với checked `u64` accounting theo ADR-0004.
+- `AccountedBatch` ownership, separate channel byte-credit và non-borrowable progress reserve.
+- Startup temp recovery-debt scan và pressure state: normal, throttled, spilling, load-shedding.
+- Local Tokio `sync`/runtime feature mapping without Tonic/Ballista leakage.
 
 **Acceptance**
 
-- Property/concurrency tests chứng minh permits không leak/double-release.
-- Cancellation trả permits.
-- Không queue hoặc worker pool nào được tạo mà thiếu hard bound.
-- Metrics phân biệt configured, reserved, used và peak bytes.
+- Tổng admitted envelopes không thể vượt hard node limit/headroom.
+- Quantization không undercharge; permit trả đúng một lần khi last owner drop/cancel.
+- Channel count/credit cap và physical memory charge đều đúng, không double-charge.
+- Slice/projection/multi-input composition giữ bounded allocation owners; materialization acquire lease mới.
+- Temp file sau crash được tính recovery debt trước admission; delete failure không trả disk capacity.
+- Progress-reserve/deadlock tests luôn progress hoặc fail typed error.
+- Metrics phân biệt configured, envelope-reserved, physically charged, flow credit, DataFusion reserved, headroom và peak bytes.
+- Low profile xử lý synthetic stream lớn hơn RAM với steady RSS và không OOM.
 
 **Performance class:** `P0-HOT`.
 
@@ -342,15 +348,15 @@ Open question chưa đủ evidence phải có spike owner và decision deadline 
 **Deliverables**
 
 - `EdgeTransport` contract.
-- Local bounded transport theo count và bytes.
+- Local bounded transport theo count + channel byte-credit, chuyển `AccountedBatch` physical lease theo ADR-0004.
 - Cancellation propagation và graceful close.
 - Backpressure/slow-consumer tests.
 - Channel benchmark so sánh candidate implementations.
 
 **Acceptance**
 
-- Producer dừng khi downstream hết permits.
-- Drop sender/receiver không deadlock hoặc leak memory.
+- Producer dừng khi downstream hết channel credits.
+- Drop sender/receiver không deadlock hoặc leak channel credit/physical lease.
 - Không message per row; unit truyền là `RecordBatch`/accounted batch.
 
 ### `WP-130` — local storage/object-store registry
@@ -578,12 +584,14 @@ Open question chưa đủ evidence phải có spike owner và decision deadline 
 - Configurable codec, row-group và part sizing.
 - Footer close, flush/fsync, deterministic immutable rename.
 - Part statistics/hash/lineage metadata.
+- Temp-disk lease cho staging/write và atomic accounting transfer vào local durable-capacity guard tại physical commit.
 
 **Acceptance**
 
 - Reader mở được mọi committed part.
 - Partial/temp file không visible qua manifest.
 - Writer memory/concurrency nằm trong permits.
+- Rename/commit không giải phóng disk charge nếu chưa verified delete hoặc transfer sang durable-capacity ownership.
 - Output correctness hash/row count được so với input policy.
 
 ### `WP-410` — artifact intent, checkpoint và resume contract
@@ -673,13 +681,14 @@ Open question chưa đủ evidence phải có spike owner và decision deadline 
 - Session factory theo resource envelope.
 - Dataset manifest `TableProvider`.
 - Projection/filter/limit/partition pushdown capability reporting.
-- DataFusion tracked memory pool và spill directory quota.
+- Native bounded DataFusion `FairSpillPool`/consumer tracking và built-in spill-directory quota inside task envelope.
 - Query/operator metrics mapping.
 
 **Acceptance**
 
 - Không nested oversubscription giữa DAG và DataFusion partitions.
 - Query lớn hơn memory spill hoặc fail controlled, không OOM.
+- DataFusion internal reservations không double-charge global envelope; streaming batches ngoài pool vẫn accounted.
 - Schema versions reconcile theo documented policy.
 
 ### `WP-510` — SQL task lifecycle
@@ -1175,7 +1184,7 @@ Giả định iteration hai tuần và team bốn người. Đây là sequencing
 - `WP-001` project/bootstrap.
 - `WP-010` local/BOM compile spike.
 - `WP-030` CI và fixture-generator skeleton.
-- Accept baseline ADRs cho BOM/event/checkpoint; draft memory-permit ADR.
+- Accept baseline ADRs cho BOM/event/checkpoint/resource permits.
 
 ### Iteration 2 — contracts
 
@@ -1291,12 +1300,11 @@ Thứ tự issue nên mở đầu tiên:
 
 1. `WP-000`: trước public launch, hoàn tất trademark, public identities và security contacts.
 2. `WP-010`: PyArrow round trip và Ballista remote multi-process query spikes; distributed compile/standalone loopback đã pass.
-3. `WP-020`: ADR-0004 memory permits/resource budget.
-4. `WP-030`: deterministic CSV fixture generator.
-5. `WP-030`: benchmark manifest/harness.
-6. `WP-100`: durable IDs, canonical hashing và error codes theo ADR-0002/0003.
-7. `WP-110`: byte-accounted memory permit pool.
-8. `WP-200`: SQLite migration/event store skeleton theo accepted ADR-0002/0003.
+3. `WP-030`: deterministic CSV fixture generator.
+4. `WP-030`: benchmark manifest/harness.
+5. `WP-100`: durable IDs, resource units, canonical hashing và error codes theo ADR-0002/0003/0004.
+6. `WP-110`: byte-accounted resource governor theo accepted ADR-0004.
+7. `WP-200`: SQLite migration/event store skeleton theo accepted ADR-0002/0003.
 
 Không bắt đầu Ballista customization, arbitrary native dynamic plugins hoặc HA consensus trong immediate backlog.
 

@@ -3,7 +3,7 @@
 - Audit date: 2026-08-05
 - Scope: repository scaffold tại `WP-001`/`WP-010`
 - Classification: `P3-NEUTRAL` documentation and architecture review
-- Sources: `docs/01-*` tới `docs/08-*`, `CONTRIBUTING.md`, accepted ADR-0001 tới ADR-0003 và current Rust/Cargo/CI scaffold
+- Sources: `docs/01-*` tới `docs/08-*`, `CONTRIBUTING.md`, accepted ADR-0001 tới ADR-0004 và current Rust/Cargo/CI scaffold
 
 ## 1. Kết luận
 
@@ -57,15 +57,15 @@ Docs cấm hard-code snapshot/lease/history/checkpoint/quarantine/commit vào `C
 
 Architecture nói single-node dùng Tokio cho I/O/lifecycle, nhưng direct Tokio dependency hiện chỉ được bật bởi `distributed`. Điều này chưa làm scaffold hiện tại sai vì local runtime chưa có async work, nhưng sẽ block hoặc tạo ad-hoc runtime khi implement local scheduler/storage.
 
-**Required direction:** chốt runtime ownership và feature mapping trước `WP-110`/`WP-120` implementation; cập nhật ADR-0001 hoặc superseding ADR nếu supported profile contract thay đổi.
+**Required direction:** ADR-0004 yêu cầu local implementation có direct Tokio `sync`/runtime features tối thiểu. `WP-110` phải cập nhật feature matrix của ADR-0001 mà không kéo Tonic/Ballista vào local/minimal profiles; nếu không giữ được isolation thì mở superseding BOM ADR.
 
-### A-06 — ADR baseline chưa hoàn tất
+### A-06 — ADR baseline đã đủ cho resource và persistence foundations
 
-ADR-0001 tới ADR-0003 đã accepted, bao gồm event state và artifact/checkpoint/manifest ordering/local durability. Development plan vẫn yêu cầu memory permits và Bronze semantics trước khi implementation tương ứng ổn định.
+ADR-0001 tới ADR-0004 đã accepted, bao gồm dependency universe, hybrid event/materialized state, artifact/checkpoint/manifest ordering/local durability và byte-accounted resource permits. Bronze schema/compatibility semantics vẫn phải được chốt trước khi implementation tương ứng ổn định.
 
 **Risk:** contributor sẽ encode durable format và correctness contract trong code-only PR.
 
-**Required direction:** ưu tiên ADR-0004 trước hot-path parallel implementation; mọi persistence work phải trace tới ADR-0002/0003.
+**Required direction:** mọi hot-path resource work phải trace tới ADR-0004; mọi persistence work phải trace tới ADR-0002/0003. Bronze format change phải đi qua ADR theo process hiện hành.
 
 ## 4. Khoảng trống delivery/enforcement
 
@@ -93,10 +93,10 @@ Tách các module/crate này sớm sẽ tạo abstraction chưa có evidence và
 ## 6. Thứ tự hành động đề xuất
 
 1. Merge contributor architecture guide và dùng nó trong issue/PR review.
-2. Hoàn tất ADR-0004 memory permit; event state và commit ordering đã được chốt trong ADR-0002/0003.
-3. Thực hiện `WP-100`: durable IDs, shared receipts, canonical hashes, stable errors và curated visibility.
-4. Thực hiện `WP-030`: fixtures, benchmark manifest, fault hooks và architecture enforcement phù hợp actual imports.
-5. Chỉ sau đó mở lane song song cho resource/transport, history/DAG và snapshot/storage theo dependency graph của development plan.
+2. Thực hiện `WP-100`: durable IDs, shared receipts, resource units, canonical hashes, stable errors và curated visibility.
+3. Thực hiện `WP-030`: fixtures, benchmark manifest, fault hooks và architecture enforcement phù hợp actual imports.
+4. Thực hiện `WP-110` resource governor trước `WP-120` transport hoặc bất kỳ hot path nào giữ buffer/temp file.
+5. Sau đó mở lane song song cho resource/transport, history/DAG và snapshot/storage theo dependency graph của development plan; mỗi lane trace tới ADR tương ứng.
 6. Xây vertical slice nhỏ đi hết snapshot → bounded batch → immutable artifact → checkpoint/history → inspection trước khi tối ưu hoặc distributed customization.
 
 ## 7. Evidence đã chạy
@@ -128,5 +128,5 @@ Kết quả:
 
 - Audit không chứng minh correctness, recovery, bounded memory hoặc distributed behavior của capability chưa được implement.
 - Dependency allowlist mới là review policy; chưa có automated architecture test.
-- Durable contract placement vẫn phụ thuộc các ADR chưa accepted.
+- Bronze schema/compatibility contract và các durable/wire decisions ngoài ADR-0001..0004 vẫn cần được chốt trước implementation tương ứng.
 - Public module visibility và local Tokio feature mapping chưa được sửa trong code vì đều chạm API/build architecture cần maintainer chốt scope.

@@ -91,7 +91,9 @@ Không include generated files/binaries/benchmark outputs lớn trừ khi reposi
 
 - Tokio cho async I/O/lifecycle, không dùng cho unlimited CPU loops.
 - CPU-heavy work nằm trong DataFusion hoặc fixed-size compute pool.
-- Mọi queue có byte limit và cancellation path.
+- Mọi queue có cả item-count cap, channel byte-credit cap và cancellation path; count cap không thay byte cap.
+- Acquire/grow physical memory hoặc temp-disk lease trước buffer allocation/file growth, rồi reconcile xuống actual charged capacity.
+- Tách task-envelope reservation, physical charge, channel byte-credit và DataFusion internal reservation; không cộng hoặc acquire cùng physical bytes hai lần.
 - Task shutdown/drop không được làm mất committed-state invariant.
 - Race tests phải bao phủ lease expiry, duplicate attempt và cancellation.
 

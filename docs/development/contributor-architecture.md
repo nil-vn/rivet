@@ -104,6 +104,7 @@ Sở hữu shared kernel ổn định:
 - Persistent offsets/counters dùng `u64` và field name có units.
 - Artifact/ticket/edge value types không phụ thuộc transport implementation.
 - Capability, resource request/budget, cancellation và canonical hashing primitives.
+- Feature-neutral byte/resource units, task envelopes, bounded consumer labels và stable resource errors theo ADR-0004; Tokio-backed implementation phải local-feature-gated và private.
 - Protocol-agnostic subject/tenant identity nếu auth providers cần chia sẻ.
 
 Không sở hữu I/O, database schema, retry loop, parser, network middleware hoặc engine session. Feature-neutral phần của `core` phải compile với `--no-default-features`; Arrow-specific batch wrappers được gate bằng feature phù hợp.
@@ -154,13 +155,13 @@ Sở hữu:
 - Parquet writer/reader, artifact intent/immutable rename/object commit mechanics.
 - Full-snapshot Arrow IPC manifest codec, Protobuf current-pointer CAS adapter và storage-side reconciliation operations theo ADR-0003.
 
-Storage không tự advance checkpoint hoặc mark task succeeded. Nó trả typed durable receipt sau Parquet/storage completion để commit coordinator kiểm tra. Reader chỉ mở object được current pointer + verified immutable manifest tham chiếu; không list prefix để suy ra snapshot.
+Storage không tự advance checkpoint hoặc mark task succeeded. Nó trả typed durable receipt sau Parquet/storage completion để commit coordinator kiểm tra. Staging/manifest/temp writers acquire disk/memory lease trước growth và transfer accounting vào durable storage capacity thay vì release giả sau rename. Reader chỉ mở object được current pointer + verified immutable manifest tham chiếu; không list prefix để suy ra snapshot.
 
 ### `transport`
 
 Sở hữu local bounded batch transport, remote Flight edge, durable edge adapter, byte credits, cancellation và ticket validation liên quan tới edge.
 
-Mọi queue có message cap và byte cap; permit đi cùng buffer/batch tới khi downstream drop. Network path được mô tả là minimal-copy, không phải zero-copy.
+Mọi queue có message cap và channel byte-credit cap; bounded allocation owners đi cùng buffer/batch tới last drop. View share owners, multi-input composition deduplicate theo lease ID; credit và physical charge báo riêng, không double-charge. Network path được mô tả là minimal-copy, không phải zero-copy. Contract phải theo ADR-0004.
 
 ### `plugins`
 
@@ -174,15 +175,16 @@ Source snapshot, leases, event history, checkpoint, manifest commit, quarantine 
 
 ### `compute`
 
-Sở hữu DataFusion session factory, manifest-backed catalog/provider integration, memory/spill accounting, query planning/execution metrics và feature-gated Ballista adapter.
+Sở hữu DataFusion session factory, manifest-backed catalog/provider integration, native bounded `FairSpillPool`/consumer tracking/`DiskManager` limits, query planning/execution metrics và feature-gated Ballista adapter.
 
-Compute nhận resource envelope từ application layer; nó không tự tạo unbounded pool hoặc quyết định business-task retry. Ballista chỉ chạy physical query workload, không nhận non-query task lifecycle.
+Compute nhận resource envelope từ application layer; DataFusion internal reservations consume its fixed child budget once, còn streaming batches ngoài pool giữ external leases theo ADR-0004. Nó không tự tạo unbounded pool hoặc quyết định business-task retry. Ballista chỉ chạy physical query workload, không nhận non-query task lifecycle.
 
 ### `control`
 
 Sở hữu application orchestration và controller/executor lifecycle:
 
 - Controller: pipeline/run/task commands, metadata scheduling, registry, lease/heartbeat/fencing và commit authorization.
+- Admission: atomically reserve node task envelopes, apply deadline/resource class policy and react to pressure without bypassing hard limits.
 - Executor: trực tiếp chạy source/compute/plugin/sink use case trong resource envelope.
 - Commit coordinator: phối hợp storage receipt với typed metadata command bao trùm artifact state, history và checkpoint; sau đó điều phối manifest prepare/seal/CAS/confirm theo ADR-0003.
 - Distributed control protocol: versioned metadata messages, không chứa tabular payload.
@@ -197,7 +199,7 @@ Cross-protocol identity/policy types nằm ở shared contract; HTTP/Flight midd
 
 ### `runtime`, `cli` và `main`
 
-`runtime` validate profile, tạo Tokio/CPU pools, storage/event adapters, registries, controller/executor/serving services và graceful shutdown graph. Không đặt business rule chỉ tồn tại trong một role bootstrap.
+`runtime` validate profile, detect host/cgroup/filesystem capacity, tạo Tokio/resource/CPU pools, scan temp recovery debt, wire storage/event adapters, registries, controller/executor/serving services và graceful shutdown graph. Không đặt business rule chỉ tồn tại trong một role bootstrap.
 
 `cli` parse input, gọi application facade và render redacted output. `main` chỉ parse/bootstrap/exit mapping. CLI không được trở thành service locator gọi thẳng mọi module.
 
@@ -235,8 +237,8 @@ cli/serving command
     → storage resolves immutable SourceSnapshot
     → discovery creates audited decisions/segments
     → plugins::csv streams resumable batches
-    → transport applies byte backpressure
-    → storage writes immutable Parquet/reject artifacts
+    → transport moves AccountedBatch leases + separate byte-credit backpressure
+    → storage writes immutable Parquet/reject artifacts under memory/temp-disk leases
     → control commit coordinator validates fencing
     → atomic metadata transaction records artifact + checkpoint + events
     → storage streams and seals full-snapshot manifest generation
@@ -313,6 +315,7 @@ Trước khi code:
 - Contract types/tests được merge cùng hoặc trước implementation consumer.
 - Không silent loss/fallback; errors actionable và đã redact.
 - Queue/cache/concurrency/temp disk có hard bound.
+- Buffer/file growth acquires ADR-0004 lease first; DataFusion native pool is bounded and not double-charged.
 - Retry, cancellation, stale lease và partial failure được test theo scope.
 - Durable change có golden/version/migration/fault evidence phù hợp.
 - Hot-path change có benchmark manifest theo performance policy.
@@ -323,7 +326,6 @@ Trước khi code:
 
 Các mục sau vẫn cần spike/ADR trước implementation production:
 
-- Memory permit/accounting API.
 - Raw/Bronze/Silver durable schema.
 - Shared auth/policy contract nếu vượt protocol middleware.
 - Tách top-level `ingestion`, `catalog`, `security` hoặc Cargo crates.

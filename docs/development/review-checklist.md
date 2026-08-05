@@ -25,7 +25,9 @@ Checklist này dùng cho author self-review, human reviewer và coding agent han
 - [ ] Không blocking operation/lock qua `.await`.
 - [ ] CPU-bound work không chiếm Tokio async workers vô hạn.
 - [ ] Queue/concurrency/cache có hard bound.
+- [ ] Buffer/file growth acquire byte-accounted lease trước use; item count không thay byte cap.
 - [ ] Backpressure đi xuyên toàn pipeline.
+- [ ] Acquire order/progress reserve ngăn hold-and-wait deadlock.
 - [ ] Race, shutdown và lease expiry được kiểm thử.
 - [ ] Lock order/contention/false sharing được xem xét.
 
@@ -33,6 +35,8 @@ Checklist này dùng cho author self-review, human reviewer và coding agent han
 
 - [ ] Không per-row heap object/message/future trong hot path.
 - [ ] Buffer copies/lifetimes được phân tích.
+- [ ] Envelope reservation, physical charge, channel credit và DataFusion reservation được báo riêng, không double-account.
+- [ ] Cancellation/view/ownership transfer trả physical lease đúng một lần khi allocation cuối drop.
 - [ ] Peak RSS/allocation impact được đo.
 - [ ] Low-memory profile được xem xét.
 - [ ] Benchmark tuân thủ performance policy.
@@ -47,6 +51,7 @@ Checklist này dùng cho author self-review, human reviewer và coding agent han
 - [ ] Parquet file hoàn chỉnh trước visible commit.
 - [ ] Local/object-store atomicity assumptions đúng.
 - [ ] Orphan/staging cleanup có reconciliation.
+- [ ] Temp-disk charge chỉ trả sau verified delete hoặc durable-capacity ownership transfer; restart debt được account.
 - [ ] No small-file/request amplification bất hợp lý.
 
 ## Security/privacy
@@ -81,4 +86,3 @@ Checklist này dùng cho author self-review, human reviewer và coding agent han
 - [ ] AI assistance được disclose khi đáng kể.
 - [ ] Không chứa unrelated user/agent changes.
 - [ ] Required approvals/checks hoàn tất.
-

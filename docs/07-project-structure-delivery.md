@@ -336,8 +336,8 @@ Spec hash bao gồm normalized configuration nhưng secret plaintext bị loại
 1. Dependency BOM/MSRV/feature isolation: accepted trong ADR-0001.
 2. Event store/materialized state: accepted trong ADR-0002.
 3. Artifact/checkpoint/manifest ordering, Arrow IPC manifest, Protobuf pointer và local durability baseline: accepted trong ADR-0003.
-4. Business DAG và physical DAG separation: cần ADR trước khi public scheduler contract ổn định.
-5. Resource/memory permit model: ADR-0004 là quyết định kế tiếp.
+4. Byte-accounted memory/temp-disk permits, task envelopes và DataFusion boundary: accepted trong ADR-0004.
+5. Business DAG và physical DAG separation: cần ADR trước khi public scheduler contract ổn định.
 6. Raw/Bronze/Silver zone semantics: cần trước durable business schema.
 7. Python trust/isolation modes.
 8. Wasm WIT batch handle contract.

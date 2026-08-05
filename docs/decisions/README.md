@@ -10,5 +10,6 @@ Thư mục này lưu các quyết định kiến trúc bất biến theo thời 
 | [0001](0001-dependency-bom-msrv.md) | Dependency BOM, MSRV và feature isolation | Accepted | 2026-08-05 |
 | [0002](0002-event-store-materialized-state.md) | Event store và materialized state | Accepted | 2026-08-05 |
 | [0003](0003-artifact-checkpoint-manifest-ordering.md) | Artifact/checkpoint/manifest ordering và metadata unit-of-work | Accepted | 2026-08-05 |
+| [0004](0004-byte-accounted-resource-permits.md) | Byte-accounted memory và temporary-disk permits | Accepted | 2026-08-05 |
 
 Khi ADR được thêm, cập nhật bảng này. Không sửa decision đã accepted để thay đổi lịch sử; tạo ADR superseding.
