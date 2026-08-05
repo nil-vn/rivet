@@ -1,0 +1,42 @@
+name: Architecture or design proposal
+description: Đề xuất thay invariant, public API, storage/wire format hoặc core dependency.
+title: "design: "
+labels:
+  - design-needed
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Problem, current behavior, requirements và constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: drivers
+    attributes:
+      label: Decision drivers
+      description: Correctness, performance, operations, compatibility, security và complexity.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: Ít nhất hai option và trade-offs khi có thể.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification/migration
+      description: Tests, benchmarks, rollout, rollback và compatibility plan.
+    validations:
+      required: true
+  - type: checkboxes
+    id: adr
+    attributes:
+      label: ADR
+      options:
+        - label: Tôi hiểu accepted design phải được ghi thành ADR khi thuộc ADR policy.
+          required: true
+

@@ -1,0 +1,53 @@
+name: Bug report
+description: Báo lỗi có thể tái hiện, không dùng cho security vulnerability.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Không đăng security vulnerability công khai. Hãy đọc SECURITY.md.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Mô tả lỗi
+      description: Điều gì xảy ra và điều gì đáng lẽ phải xảy ra?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Cách tái hiện
+      description: Cung cấp minimal steps, config và sample không nhạy cảm.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Môi trường
+      description: Commit/version, OS, Rust, features, CPU/RAM, storage/network liên quan.
+    validations:
+      required: true
+  - type: textarea
+    id: correctness
+    attributes:
+      label: Ảnh hưởng dữ liệu/recovery
+      description: Có loss, duplicate, corrupt output, checkpoint/resume hoặc partial commit không?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs và diagnostics
+      description: Redact secrets và sensitive/raw data.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Xác nhận
+      options:
+        - label: Đây không phải security vulnerability chưa vá.
+          required: true
+        - label: Tôi đã loại secrets và sensitive data.
+          required: true
+

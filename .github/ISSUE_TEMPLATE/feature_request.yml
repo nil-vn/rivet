@@ -1,0 +1,40 @@
+name: Feature request
+description: Đề xuất capability hoặc behavior mới.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem/use case
+      description: Mô tả user problem, scale và current workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Đề xuất
+      description: Behavior/API mong muốn, không chỉ tên technology.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Correctness và HPC constraints
+      description: Resume, memory, throughput, distributed, storage và security implications.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Các cách khác và trade-offs.
+  - type: checkboxes
+    id: design
+    attributes:
+      label: Design impact
+      options:
+        - label: Có thể cần ADR/public API/storage/wire change.
+        - label: Có thể cần benchmark hoặc fault-injection suite mới.
+

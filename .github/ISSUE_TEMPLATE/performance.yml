@@ -1,0 +1,51 @@
+name: Performance issue or proposal
+description: Báo regression/bottleneck hoặc đề xuất HPC optimization có evidence.
+title: "perf: "
+labels:
+  - performance
+body:
+  - type: textarea
+    id: workload
+    attributes:
+      label: Workload
+      description: Dataset shape/hash, encoding, transform, source/sink, codec và concurrency.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: CPU/RAM/disk/network/OS/Rust/build/features/commit.
+    validations:
+      required: true
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Measurements
+      description: Raw samples/statistics, throughput, CPU, peak RSS/allocation, output size.
+    validations:
+      required: true
+  - type: textarea
+    id: profile
+    attributes:
+      label: Bottleneck/profile evidence
+      description: Flamegraph/perf/operator metrics/queue occupancy hoặc evidence tương đương.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Optimization hypothesis
+      description: Vì sao thay đổi sẽ tác động bottleneck và trade-offs dự kiến.
+  - type: checkboxes
+    id: policy
+    attributes:
+      label: Xác nhận
+      options:
+        - label: Baseline/result dùng cùng environment và release profile.
+          required: true
+        - label: Tôi không chỉ báo best run.
+          required: true
+        - label: Tôi đã đọc HPC performance policy.
+          required: true
+
