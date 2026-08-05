@@ -398,6 +398,8 @@ ADR nên được tạo khi bắt đầu implementation:
 
 ## 9. Lộ trình triển khai
 
+Phần này mô tả roadmap kiến trúc ở mức phase. Work packages, dependency graph, effort, release gates và iteration sequencing chi tiết nằm trong [kế hoạch phát triển](08-development-plan.md).
+
 ### Phase 0 — technical spikes
 
 - Compile coherent dependency graph.
@@ -610,4 +612,3 @@ Các câu hỏi này không được giải quyết bằng assumption âm thầm
 - [object_store crate](https://docs.rs/object_store/latest/object_store/)
 - [PyO3 crate](https://docs.rs/crate/pyo3/latest)
 - [Wasmtime crate](https://docs.rs/wasmtime/latest/wasmtime/)
-

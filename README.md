@@ -25,6 +25,7 @@ Rivet là tên mã tạm thời cho một data platform Arrow-native viết bằ
 - [Performance và scalability](docs/05-performance-scalability.md)
 - [Extensibility, serving và security](docs/06-extensibility-serving-security.md)
 - [Cấu trúc dự án và delivery](docs/07-project-structure-delivery.md)
+- [Kế hoạch phát triển chi tiết](docs/08-development-plan.md)
 
 ## Cộng tác
 
@@ -37,4 +38,3 @@ Rivet là tên mã tạm thời cho một data platform Arrow-native viết bằ
 ## Pháp lý trước khi public OSS
 
 Repository chưa chọn LICENSE hoặc DCO/CLA. Xem [OSS readiness checklist](docs/community/open-source-readiness.md). Chủ dự án phải chốt các mục này trước khi nhận code từ external contributors.
-

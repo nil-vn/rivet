@@ -13,6 +13,7 @@ Tài liệu này tổng hợp các requirement, quyết định kiến trúc và
 5. [Hiệu năng, khả năng chịu tải và scale-out](05-performance-scalability.md)
 6. [Extensibility, serving, vận hành và bảo mật](06-extensibility-serving-security.md)
 7. [Cấu trúc dự án, dependency, lộ trình và verification](07-project-structure-delivery.md)
+8. [Kế hoạch phát triển chi tiết](08-development-plan.md)
 
 ## Phát triển và cộng đồng
 
