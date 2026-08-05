@@ -1,0 +1,80 @@
+[package]
+name = "furrumx"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+description = "Arrow-native high-performance data platform"
+license = "MIT"
+publish = false
+
+[features]
+default = ["local"]
+local = [
+    "dep:arrow",
+    "dep:datafusion",
+    "dep:object_store",
+    "dep:parquet",
+]
+flight-sql = [
+    "local",
+    "dep:arrow-flight",
+    "arrow-flight/flight-sql",
+    "arrow-flight/tls-ring",
+]
+distributed = [
+    "flight-sql",
+    "dep:ballista",
+    "dep:prost",
+    "dep:prost-types",
+    "dep:tonic",
+]
+wasm = ["dep:wasmtime", "dep:wasmtime-wasi"]
+python = ["local", "arrow/pyarrow", "dep:pyo3"]
+s3 = ["local", "object_store/aws"]
+http-store = ["local", "object_store/http"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive", "env"] }
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+arrow = { version = "58.3", default-features = false, features = ["ffi", "ipc"], optional = true }
+arrow-flight = { version = "58.3", default-features = false, optional = true }
+ballista = { version = "53.0", default-features = false, optional = true }
+datafusion = { version = "53.1", default-features = false, features = ["parquet", "sql"], optional = true }
+object_store = { version = "0.13.1", default-features = false, features = ["fs"], optional = true }
+parquet = { version = "58.3", default-features = false, features = ["arrow", "async", "object_store", "snap", "zstd"], optional = true }
+
+prost = { version = "0.14", optional = true }
+prost-types = { version = "0.14", optional = true }
+tonic = { version = "0.14", default-features = false, features = ["transport", "tls-ring"], optional = true }
+
+pyo3 = { version = "0.28.3", features = ["auto-initialize"], optional = true }
+wasmtime = { version = "47.0", default-features = false, features = ["async", "component-model", "cranelift", "runtime"], optional = true }
+wasmtime-wasi = { version = "47.0", default-features = false, optional = true }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[profile.bench]
+inherits = "release"
+debug = 1
+strip = "none"
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+dbg_macro = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"

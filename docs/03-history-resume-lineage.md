@@ -430,13 +430,13 @@ Multi-node không được tăng DB write rate theo batch/row. Checkpoint/event 
 ## 17. Audit API/CLI
 
 ```text
-rivet run history <run-id>
-rivet task history <run-id> <task-id>
-rivet task resume <run-id> <task-id>
-rivet lineage artifact <artifact-id>
-rivet lineage dataset <dataset> --generation <generation>
-rivet dataset versions <dataset>
-rivet reconcile --dry-run
+furrumx run history <run-id>
+furrumx task history <run-id> <task-id>
+furrumx task resume <run-id> <task-id>
+furrumx lineage artifact <artifact-id>
+furrumx lineage dataset <dataset> --generation <generation>
+furrumx dataset versions <dataset>
+furrumx reconcile --dry-run
 ```
 
 API phải trả:
@@ -456,4 +456,3 @@ API phải trả:
 - Staging file chỉ xóa sau lease expiry và reconciliation grace period.
 - Raw snapshots có policy riêng; xóa raw làm mất khả năng full replay và phải được audit.
 - Garbage collection là mark-and-sweep từ committed manifests/checkpoints, không dựa vào filename age đơn thuần.
-

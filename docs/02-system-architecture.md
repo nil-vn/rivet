@@ -2,14 +2,14 @@
 
 ## 1. Architectural style
 
-Rivet bắt đầu dưới dạng modular monolith nhưng module boundary được thiết kế như service boundary. Toàn bộ hệ thống biên dịch thành một executable; executable có thể chạy một hoặc nhiều vai trò:
+FurrumX bắt đầu dưới dạng modular monolith nhưng module boundary được thiết kế như service boundary. Toàn bộ hệ thống biên dịch thành một executable; executable có thể chạy một hoặc nhiều vai trò:
 
 ```text
-rivet node --role all
-rivet node --role controller
-rivet node --role executor
-rivet serve
-rivet run pipeline.toml
+furrumx node --role all
+furrumx node --role controller
+furrumx node --role executor
+furrumx serve
+furrumx run pipeline.toml
 ```
 
 Trong single-node mode, các module trao đổi `RecordBatch` trực tiếp trong cùng process. Trong distributed mode, controller điều phối metadata, executor đọc/ghi dữ liệu trực tiếp, còn tabular exchange dùng Arrow Flight.

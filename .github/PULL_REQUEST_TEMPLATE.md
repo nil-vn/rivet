@@ -49,9 +49,8 @@ Liệt kê test/feature/platform chưa chạy và lý do.
 - [ ] Dependency/unsafe/breaking decision đã có review/ADR phù hợp.
 - [ ] Tôi đã self-review theo `docs/development/review-checklist.md`.
 - [ ] Tôi disclose AI assistance đáng kể và chịu trách nhiệm toàn bộ patch.
-- [ ] Contribution legal mechanism đã được repository chốt và tôi tuân thủ nó.
+- [ ] Nếu đây là external contribution, mọi commit đã có DCO `Signed-off-by` hợp lệ.
 
 ## AI assistance disclosure
 
 Nêu tool/agent đã dùng đáng kể, phạm vi tạo/sửa và cách human verification được thực hiện. Ghi `None` nếu không có.
-

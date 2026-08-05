@@ -2,7 +2,7 @@
 
 ## 1. Tầm nhìn
 
-Rivet là một data platform Arrow-native, hiệu năng cao, nhẹ và vận hành bằng một executable Rust duy nhất. Sản phẩm hướng tới việc gom các năng lực thường bị phân tán giữa Airflow, Spark và Kafka vào một hệ thống thống nhất cho ETL/ELT, analytical compute và data serving.
+FurrumX là một data platform Arrow-native, hiệu năng cao, nhẹ và vận hành bằng một executable Rust duy nhất. Sản phẩm hướng tới việc gom các năng lực thường bị phân tán giữa Airflow, Spark và Kafka vào một hệ thống thống nhất cho ETL/ELT, analytical compute và data serving.
 
 “Single binary” có nghĩa cùng một artifact thực thi được nhiều vai trò. Trong distributed mode, binary vẫn được chạy trên nhiều máy; không có nghĩa toàn cluster chỉ có một process.
 
@@ -228,4 +228,3 @@ Rivet là một data platform Arrow-native, hiệu năng cao, nhẹ và vận h�
 - `AC-008`: Slow Flight/WS client không làm RSS tăng không giới hạn.
 - `AC-009`: Node thấp xử lý input lớn hơn RAM mà không OOM.
 - `AC-010`: CLI/API trả được timeline, checkpoint, artifact lineage và lý do retry của mọi task.
-

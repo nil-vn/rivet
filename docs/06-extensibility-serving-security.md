@@ -100,7 +100,7 @@ Python interpreter và wheels làm binary/package lớn, có platform dependency
 Wasm linear memory tách khỏi host memory. Zero-copy raw Arrow buffers không portable. Thiết kế dùng host-managed resource handle:
 
 ```wit
-package rivet:analytics;
+package furrumx:analytics;
 
 interface batches {
     resource batch;
@@ -431,4 +431,3 @@ Graceful shutdown:
 - [Wasmtime Store/resource limits](https://docs.rs/wasmtime/latest/wasmtime/struct/Store.html)
 - [Arrow Flight SQL](https://arrow.apache.org/docs/format/FlightSql.html)
 - [object_store](https://docs.rs/object_store/latest/object_store/)
-

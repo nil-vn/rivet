@@ -1,6 +1,6 @@
-# Rivet Data Platform — bộ tài liệu dự án
+# FurrumX Data Platform — bộ tài liệu dự án
 
-Rivet là tên mã tạm thời cho một nền tảng ETL/ELT, phân tích và data serving viết bằng Rust, biên dịch thành một executable duy nhất. Hệ thống kết hợp orchestration, columnar compute, data exchange và serving trong cùng một kiến trúc Arrow-native; chạy được trên một máy cấu hình thấp nhưng có thể scale-out trên nhiều node.
+FurrumX là một nền tảng ETL/ELT, phân tích và data serving viết bằng Rust, biên dịch thành một executable duy nhất. Hệ thống kết hợp orchestration, columnar compute, data exchange và serving trong cùng một kiến trúc Arrow-native; chạy được trên một máy cấu hình thấp nhưng có thể scale-out trên nhiều node.
 
 Tài liệu này tổng hợp các requirement, quyết định kiến trúc và đề xuất kỹ thuật đã thống nhất. Mọi con số hiệu năng là mục tiêu cần benchmark theo một hardware envelope cụ thể, không phải cam kết tách rời giới hạn CPU, disk, network và object storage.
 
@@ -21,6 +21,7 @@ Tài liệu này tổng hợp các requirement, quyết định kiến trúc và
 - [Review checklist](development/review-checklist.md)
 - [ADR process](development/adr-process.md)
 - [Agent collaboration và handoff](development/agent-handoff.md)
+- [Thiết lập Linux/WSL](development/wsl-setup.md)
 - [Architecture Decision Records](decisions/README.md)
 - [Open-source readiness](community/open-source-readiness.md)
 - [Contribution guide](../CONTRIBUTING.md)
@@ -47,7 +48,7 @@ Tài liệu này tổng hợp các requirement, quyết định kiến trúc và
 
 - Mức độ: architectural baseline cho thiết kế và triển khai MVP.
 - Ngày chốt dependency baseline: 2026-08-05.
-- Tên sản phẩm, API public và format pipeline vẫn có thể thay đổi qua ADR.
+- Tên sản phẩm đã chọn là FurrumX; API public và format pipeline vẫn có thể thay đổi qua ADR.
 - Các quyết định làm thay đổi correctness, compatibility hoặc storage format phải được version hóa, không chỉnh âm thầm.
 
 ## Quy ước requirement

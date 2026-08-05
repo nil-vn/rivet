@@ -1,0 +1,14 @@
+/target/
+/.cache/
+/.idea/
+/.vscode/
+*.profraw
+*.profdata
+*.flamegraph.svg
+*.log
+
+# Local data, spill, and benchmark artifacts must not be committed.
+/data/
+/lakehouse/
+/spill/
+/benchmark-results/

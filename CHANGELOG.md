@@ -7,4 +7,9 @@ Các thay đổi đáng chú ý sẽ được ghi trong file này. Dự án đan
 ### Added
 
 - Architectural, requirements, recovery, ingestion, performance và community documentation baseline.
+- Rust project scaffold, WSL doctor, CI baseline và dependency BOM ADR.
+- MIT License và DCO 1.1 policy cho external contributions trong tương lai.
 
+### Changed
+
+- Đổi tên dự án và CLI từ Rivet sang FurrumX/`furrumx`.

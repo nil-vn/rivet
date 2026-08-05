@@ -59,7 +59,7 @@ Performance benchmark chỉ hợp lệ khi baseline và candidate tạo kết qu
 8. Profile candidate để xác nhận improvement đến từ hypothesized path.
 9. Báo trade-offs và raw data/manifest.
 
-DataFusion cũng yêu cầu performance PR có benchmark và khuyến nghị benchmark baseline riêng; Rivet áp cùng tinh thần cho parser/ingestion/distributed paths.
+DataFusion cũng yêu cầu performance PR có benchmark và khuyến nghị benchmark baseline riêng; FurrumX áp cùng tinh thần cho parser/ingestion/distributed paths.
 
 ## 5. Environment control
 
@@ -263,4 +263,3 @@ Maintainer có thể từ chối optimization thật sự nhanh hơn nếu lợi
 - [Rust Performance Book — Benchmarking](https://nnethercote.github.io/perf-book/benchmarking.html)
 - [DataFusion contributor performance guidance](https://datafusion.apache.org/contributor-guide/index.html)
 - [DataFusion benchmark baselines](https://datafusion.apache.org/contributor-guide/testing.html)
-

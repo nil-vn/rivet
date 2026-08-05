@@ -1,8 +1,8 @@
-# Rivet Data Platform
+# FurrumX Data Platform
 
-Rivet là tên mã tạm thời cho một data platform Arrow-native viết bằng Rust, hướng tới ETL/ELT, analytical compute, orchestration và data serving trong một executable duy nhất. Hệ thống được thiết kế để chạy ổn định trên node cấu hình thấp, xử lý dữ liệu lớn hơn RAM, đồng thời scale-out bằng DataFusion, Ballista và Arrow Flight.
+FurrumX là một data platform Arrow-native viết bằng Rust, hướng tới ETL/ELT, analytical compute, orchestration và data serving trong một executable duy nhất. Hệ thống được thiết kế để chạy ổn định trên node cấu hình thấp, xử lý dữ liệu lớn hơn RAM, đồng thời scale-out bằng DataFusion, Ballista và Arrow Flight.
 
-> Trạng thái: thiết kế/khởi tạo dự án. Chưa có release production và chưa mở nhận contribution công khai cho tới khi hoàn tất quyết định LICENSE và contribution certification.
+> Trạng thái: private development trên Linux/WSL. Chưa có production release và chưa nhận external contribution.
 
 ## Đặc tính mục tiêu
 
@@ -35,6 +35,17 @@ Rivet là tên mã tạm thời cho một data platform Arrow-native viết bằ
 - Performance change: tuân thủ [HPC performance policy](docs/development/performance-quality-gates.md).
 - Security issue: đọc [SECURITY.md](SECURITY.md), không mở public issue cho vulnerability chưa vá.
 
+## Khởi động trên WSL
+
+```bash
+./scripts/check-wsl.sh
+cargo run --locked -- doctor
+cargo check --locked --workspace --all-targets
+cargo test --locked --workspace
+```
+
+Workspace hiện ở dưới `/mnt/c` phù hợp functional testing nhưng không phù hợp HPC benchmark. Xem [hướng dẫn Linux/WSL](docs/development/wsl-setup.md) trước khi đo I/O hoặc throughput.
+
 ## Pháp lý trước khi public OSS
 
-Repository chưa chọn LICENSE hoặc DCO/CLA. Xem [OSS readiness checklist](docs/community/open-source-readiness.md). Chủ dự án phải chốt các mục này trước khi nhận code từ external contributors.
+FurrumX được cấp phép theo [MIT License](LICENSE). Khi mở nhận external contribution, dự án dùng [Developer Certificate of Origin 1.1](DCO) thay vì CLA; contributor xác nhận bằng `Signed-off-by`. Xem [OSS readiness checklist](docs/community/open-source-readiness.md).

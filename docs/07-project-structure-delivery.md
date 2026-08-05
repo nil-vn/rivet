@@ -18,11 +18,14 @@ Chỉ tách Cargo workspace crates khi:
 ## 2. Cấu trúc thư mục đề xuất
 
 ```text
-rivet/
+furrumx/
 ├── Cargo.toml
 ├── Cargo.lock
 ├── build.rs
 ├── rust-toolchain.toml
+├── rustfmt.toml
+├── LICENSE
+├── DCO
 ├── README.md
 ├── src/
 │   ├── main.rs
@@ -132,6 +135,9 @@ rivet/
 ├── migrations/
 │   └── 0001_initial.sql
 ├── docs/
+├── scripts/
+│   ├── check-docs.sh
+│   └── check-wsl.sh
 ├── examples/
 │   ├── csv_to_parquet.toml
 │   └── distributed_etl.toml
@@ -155,115 +161,53 @@ Baseline ngày 2026-08-05:
 
 - Ballista 53 phụ thuộc DataFusion 53 và Arrow Flight 58.
 - Không dùng DataFusion 54 trong distributed build cho tới khi Ballista tương ứng được nâng.
-- Arrow/Parquet/Flight cùng major 58.
-- `object_store` giữ dòng 0.13 để tương thích DataFusion/Ballista, dù upstream có dòng mới hơn.
-- Arrow PyArrow 58 dùng PyO3-compatible 0.28 line; không ép PyO3 0.29 nếu tạo `links` conflict.
+- Lockfile hiện resolve Arrow/Parquet/Flight 58.4.x và DataFusion 53.1.x.
+- `object_store` resolve 0.13.2 để tương thích DataFusion/Ballista, dù upstream có dòng mới hơn.
+- Arrow PyArrow 58.4 dùng PyO3-compatible 0.28 line; không ép PyO3 0.29 nếu tạo `links` conflict.
+- Wasmtime 47 đặt package MSRV ở Rust 1.94; development/CI pin 1.97.1.
 
-`Cargo.lock` phải commit và release build dùng `--locked`.
+`Cargo.lock` phải commit và release build dùng `--locked`. Chi tiết và compile evidence nằm trong [ADR-0001](decisions/0001-dependency-bom-msrv.md).
 
 ## 4. Cargo.toml khởi điểm
 
-Đây là dependency plan, cần được xác nhận bằng một compile spike trước khi khóa MVP API:
+Root `Cargo.toml` là source of truth. Scaffold private/WSL hiện dùng profile tối thiểu sau; dependency mới chỉ được thêm theo work package thực tế:
 
 ```toml
 [package]
-name = "rivet"
+name = "furrumx"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.94"
+license = "MIT"
+publish = false
 
 [features]
-default = ["local", "flight-sql", "wasm"]
-local = []
-distributed = ["dep:ballista"]
-flight-sql = ["arrow-flight/flight-sql"]
+default = ["local"]
+local = ["dep:arrow", "dep:datafusion", "dep:object_store", "dep:parquet"]
+flight-sql = ["local", "dep:arrow-flight", "arrow-flight/flight-sql"]
+distributed = ["flight-sql", "dep:ballista", "dep:prost", "dep:tonic"]
 wasm = ["dep:wasmtime", "dep:wasmtime-wasi"]
-python = ["arrow/pyarrow", "dep:pyo3"]
-s3 = ["object_store/aws"]
-http-store = ["object_store/http"]
+python = ["local", "arrow/pyarrow", "dep:pyo3"]
+s3 = ["local", "object_store/aws"]
+http-store = ["local", "object_store/http"]
 
 [dependencies]
-anyhow = "1"
-async-trait = "0.1"
-thiserror = "2"
-
-arrow = { version = "58", default-features = false, features = ["ipc", "ffi"] }
-arrow-flight = { version = "58", features = ["tls-ring"] }
-parquet = { version = "58", features = ["arrow", "async", "object_store"] }
-datafusion = { version = "53", features = ["parquet"] }
-ballista = { version = "53", optional = true }
-
-object_store = { version = "0.13", features = ["fs"] }
-
-tokio = { version = "1.53", features = ["full"] }
-tokio-util = "0.7"
-futures = "0.3"
-flume = { version = "0.12", features = ["async"] }
-rayon = "1"
-
-tonic = { version = "0.14", features = ["transport", "tls-ring"] }
-prost = "0.14"
-prost-types = "0.14"
-
-axum = { version = "0.8", features = ["ws", "http2"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["trace", "cors"] }
-
-petgraph = "0.8"
-dashmap = "6"
-parking_lot = "0.12"
-
-encoding_rs = "0.8"
-chardetng = "1"
-csv-core = "0.1"
-simdutf8 = "0.1"
-memmap2 = "0.9"
-bytes = "1"
-
-serde = { version = "1", features = ["derive"] }
-toml = "0.9"
-url = "2"
-uuid = { version = "1", features = ["v7", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
-blake3 = "1"
-sha2 = "0.10"
-
-sqlx = {
-    version = "0.8",
-    default-features = false,
-    features = ["runtime-tokio", "sqlite", "migrate"]
-}
-
 clap = { version = "4", features = ["derive", "env"] }
+thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-metrics = "0.24"
 
-pyo3 = {
-    version = "0.28.3",
-    optional = true,
-    features = ["auto-initialize"]
-}
-
-wasmtime = {
-    version = "47",
-    optional = true,
-    features = ["async", "component-model", "cranelift"]
-}
-
-wasmtime-wasi = { version = "47", optional = true }
-
-[build-dependencies]
-tonic-prost-build = "0.14"
-
-[profile.release]
-opt-level = 3
-lto = "thin"
-codegen-units = 1
-strip = "symbols"
+arrow = { version = "58.3", optional = true }
+arrow-flight = { version = "58.3", optional = true }
+parquet = { version = "58.3", optional = true }
+datafusion = { version = "53.1", optional = true }
+ballista = { version = "53.0", optional = true }
+object_store = { version = "0.13.1", optional = true }
+pyo3 = { version = "0.28.3", optional = true }
+wasmtime = { version = "47.0", optional = true }
 ```
 
-Không đặt `panic = "abort"` trong baseline vì plugin/native panic isolation và graceful cleanup cần được đánh giá trước khi đổi.
+Wasmtime 47 đặt MSRV thực tế của full feature universe ở Rust 1.94. Development/CI pin Rust 1.97.1. Không đặt `panic = "abort"` trong baseline vì plugin/native panic isolation và graceful cleanup cần được đánh giá trước khi đổi.
 
 ## 5. Build profiles
 

@@ -1,8 +1,8 @@
 # Hướng dẫn đóng góp
 
-Cảm ơn bạn quan tâm tới Rivet. Dự án đặt correctness, recoverability và hiệu năng có thể chứng minh cao hơn tốc độ merge. Một patch nhanh nhưng tạo unbounded memory, làm mơ hồ lineage hoặc không có benchmark phù hợp sẽ không được chấp nhận.
+Cảm ơn bạn quan tâm tới FurrumX. Dự án đặt correctness, recoverability và hiệu năng có thể chứng minh cao hơn tốc độ merge. Một patch nhanh nhưng tạo unbounded memory, làm mơ hồ lineage hoặc không có benchmark phù hợp sẽ không được chấp nhận.
 
-> Chưa mở nhận code contribution công khai cho tới khi LICENSE và DCO/CLA được chốt. Bạn vẫn có thể thảo luận thiết kế, requirement, benchmark methodology và báo lỗi. Xem `docs/community/open-source-readiness.md`.
+> Repository hiện phát triển private và chưa nhận external contribution. Khi mở OSS, code được cấp phép MIT và mọi external commit phải tuân thủ DCO 1.1. Xem `LICENSE`, `DCO` và `docs/community/open-source-readiness.md`.
 
 ## 1. Trước khi bắt đầu
 
@@ -188,7 +188,10 @@ Giữ PR đủ nhỏ để review chính xác. Large changes nên chia theo benc
 
 - Commit message ngắn, imperative và giải thích intent.
 - Không squash evidence cần thiết trước review; merge strategy do maintainer quyết định.
-- DCO sign-off chưa bắt buộc cho tới khi governance/legal decision được chốt. Không thêm sign-off policy âm thầm trong PR template.
+- Commit nội bộ trong private phase không bắt buộc DCO sign-off.
+- Khi external contribution được mở, contributor phải đọc `DCO` và ký từng commit bằng `git commit -s`.
+- `Signed-off-by` xác nhận provenance theo DCO; nó không thay thế MIT License và không phải CLA.
+- Không dùng tên/email của người khác trong sign-off.
 
 ## 11. Communication
 
@@ -196,4 +199,3 @@ Giữ PR đủ nhỏ để review chính xác. Large changes nên chia theo benc
 - Critique code/design/evidence, không công kích cá nhân.
 - English hoặc Vietnamese đều được trong giai đoạn đầu; English được khuyến nghị cho public OSS discussions.
 - Benchmark disagreement được giải quyết bằng reproducible experiment, không bằng thẩm quyền hoặc cảm nhận.
-

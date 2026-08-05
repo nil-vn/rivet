@@ -14,6 +14,15 @@ Thứ tự ưu tiên khi có mâu thuẫn:
 
 Mọi estimate là khoảng effort để lập capacity, không phải deadline. Throughput 100+ GB/phút/node hoặc TB/phút/cluster chỉ trở thành release claim sau khi vượt benchmark gate trên hardware envelope được công bố.
 
+Trạng thái thực thi ngày 2026-08-05:
+
+- Private development; product name FurrumX.
+- MIT License; DCO 1.1 dành cho external contributions khi mở OSS.
+- Linux x86_64/WSL2 là platform bootstrap.
+- `WP-001` scaffold đã được thiết lập.
+- `WP-010` đã pass local/Flight SQL/S3/Wasm/Python compile; distributed và runtime round-trip spikes còn mở.
+- `ADR-0001` đã khóa dependency BOM/MSRV baseline.
+
 ## 2. Kết quả delivery
 
 Kế hoạch tạo ra sáu release outcomes tăng dần:
@@ -201,14 +210,14 @@ Khóa những quyết định có thể làm toàn bộ implementation không co
 
 **Deliverables**
 
-- Chủ dự án chốt tên, LICENSE và DCO/CLA/repository-license model.
+- Tên FurrumX, MIT License và DCO 1.1 đã được chốt.
 - Public maintainer/security/conduct contacts.
 - CODEOWNERS và protected-branch policy khi repository public.
 - Dependency license/provenance policy.
 
 **Acceptance**
 
-- Các blocker tương ứng trong `docs/community/open-source-readiness.md` được đóng.
+- Các legal-mechanism blocker tương ứng trong `docs/community/open-source-readiness.md` được đóng.
 - External code contributions chỉ mở sau khi contribution terms rõ ràng.
 
 WP này không block private/internal engineering, nhưng block public code intake và release.
@@ -220,7 +229,7 @@ WP này không block private/internal engineering, nhưng block public code inta
 - `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `build.rs`.
 - `src/main.rs`, `src/lib.rs`, module skeleton tối thiểu.
 - Lint policy, formatting, feature profile và release profile.
-- CLI `rivet --version`, `rivet doctor`, structured tracing bootstrap.
+- CLI `furrumx --version`, `furrumx doctor`, structured tracing bootstrap.
 - Clean-clone developer setup.
 
 **Acceptance**
@@ -1275,18 +1284,16 @@ Mỗi release candidate phải có:
 
 Thứ tự issue nên mở đầu tiên:
 
-1. `WP-000`: owner decisions cho tên/LICENSE/DCO/security contacts.
-2. `WP-001`: Cargo/toolchain/module bootstrap.
-3. `WP-010`: coherent local/distributed/Python dependency spikes.
-4. `WP-020`: ADR-0001 BOM/MSRV.
-5. `WP-020`: ADR-0002 event/materialized state.
-6. `WP-020`: ADR-0003 artifact/checkpoint/manifest ordering.
-7. `WP-020`: ADR-0004 memory permits/resource budget.
-8. `WP-030`: deterministic CSV fixture generator.
-9. `WP-030`: benchmark manifest/harness.
-10. `WP-100`: durable IDs, canonical hashing và error codes.
-11. `WP-110`: byte-accounted memory permit pool.
-12. `WP-200`: SQLite migration/event store skeleton.
+1. `WP-000`: trước public launch, hoàn tất trademark, public identities và security contacts.
+2. `WP-010`: distributed compile, PyArrow round trip và Ballista remote-query spikes.
+3. `WP-020`: ADR-0002 event/materialized state.
+4. `WP-020`: ADR-0003 artifact/checkpoint/manifest ordering.
+5. `WP-020`: ADR-0004 memory permits/resource budget.
+6. `WP-030`: deterministic CSV fixture generator.
+7. `WP-030`: benchmark manifest/harness.
+8. `WP-100`: durable IDs, canonical hashing và error codes.
+9. `WP-110`: byte-accounted memory permit pool.
+10. `WP-200`: SQLite migration/event store skeleton.
 
 Không bắt đầu Ballista customization, arbitrary native dynamic plugins hoặc HA consensus trong immediate backlog.
 
