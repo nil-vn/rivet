@@ -220,14 +220,16 @@ Ballista standalone có thể được embed cho compatibility test, nhưng sing
 5. Lease ranges to executors
 6. Decode and parse into RecordBatch stream
 7. Detect inline schema/header drift
-8. Write immutable bronze Parquet parts
-9. Commit artifact and checkpoint
-10. Merge artifact metadata
-11. Publish dataset manifest generation
-12. Trigger downstream tasks
+8. Write and physically commit immutable bronze Parquet parts
+9. Atomically commit artifact facts, checkpoint, events and watermark
+10. Prepare and seal a full-snapshot manifest generation
+11. Publish current pointer with compare-and-swap
+12. Confirm publication, then trigger downstream tasks
 ```
 
-Controller chỉ nhận metadata ở bước 5, 9, 10 và 11; không nhận bytes từ bước 6–8.
+Controller chỉ nhận metadata ở bước 5 và 9–12; không nhận bytes từ bước 6–8.
+
+Ordering, typed metadata command, local/object-store durability và reconciliation phải tuân thủ [ADR-0003](decisions/0003-artifact-checkpoint-manifest-ordering.md).
 
 ## 8. Transport abstraction
 

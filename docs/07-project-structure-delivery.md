@@ -331,22 +331,18 @@ Spec hash bao gồm normalized configuration nhưng secret plaintext bị loại
 - Breaking storage format cần migration/reader compatibility plan.
 - Resume contract thay đổi là breaking correctness change và phải invalidate checkpoint cũ.
 
-## 8. ADR backlog
+## 8. ADR status và backlog
 
-ADR nên được tạo khi bắt đầu implementation:
-
-1. Arrow/DataFusion/Ballista BOM policy.
-2. Business DAG và physical DAG separation.
-3. Event store và materialized state.
-4. Checkpoint-after-artifact invariant.
-5. Raw/bronze/silver zone semantics.
-6. Manifest format: Arrow IPC hay Protobuf.
-7. Local commit/fsync guarantees theo OS/filesystem.
-8. Resource/memory permit model.
-9. Python trust/isolation modes.
-10. Wasm WIT batch handle contract.
-11. HA metadata backend.
-12. Dataset catalog/Iceberg adoption.
+1. Dependency BOM/MSRV/feature isolation: accepted trong ADR-0001.
+2. Event store/materialized state: accepted trong ADR-0002.
+3. Artifact/checkpoint/manifest ordering, Arrow IPC manifest, Protobuf pointer và local durability baseline: accepted trong ADR-0003.
+4. Business DAG và physical DAG separation: cần ADR trước khi public scheduler contract ổn định.
+5. Resource/memory permit model: ADR-0004 là quyết định kế tiếp.
+6. Raw/Bronze/Silver zone semantics: cần trước durable business schema.
+7. Python trust/isolation modes.
+8. Wasm WIT batch handle contract.
+9. HA metadata backend.
+10. Dataset catalog/Iceberg/Delta adoption.
 
 ## 9. Lộ trình triển khai
 

@@ -11,6 +11,7 @@ Các thay đổi đáng chú ý sẽ được ghi trong file này. Dự án đan
 - MIT License và DCO 1.1 policy cho external contributions trong tương lai.
 - Ballista scheduler/executor loopback smoke test và distributed CI profile.
 - Accepted ADR-0002 cho hybrid event ledger, transactional materialized state và SQLite WAL local backend.
+- Accepted ADR-0003 cho artifact/checkpoint/manifest ordering, typed metadata unit-of-work, Arrow IPC manifest và conditional current-pointer publication.
 
 ### Changed
 

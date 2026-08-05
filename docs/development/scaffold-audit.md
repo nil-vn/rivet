@@ -3,7 +3,7 @@
 - Audit date: 2026-08-05
 - Scope: repository scaffold tại `WP-001`/`WP-010`
 - Classification: `P3-NEUTRAL` documentation and architecture review
-- Sources: `docs/01-*` tới `docs/08-*`, `CONTRIBUTING.md`, accepted ADR-0001 và current Rust/Cargo/CI scaffold
+- Sources: `docs/01-*` tới `docs/08-*`, `CONTRIBUTING.md`, accepted ADR-0001 tới ADR-0003 và current Rust/Cargo/CI scaffold
 
 ## 1. Kết luận
 
@@ -39,7 +39,7 @@ Mọi domain module ngoài CLI/runtime hiện là namespace rỗng. `lib.rs` exp
 
 Artifact write thuộc storage, event/state thuộc history và checkpoint thuộc checkpoint. Nếu một trong ba adapter tự điều phối toàn transaction, các module sẽ import vòng hoặc invariant `INV-001`/`INV-003` bị phân tán.
 
-**Required direction:** storage trả immutable artifact receipt; application commit coordinator thuộc `control` và dùng một ADR-defined metadata unit-of-work để atomically ghi artifact state, checkpoint và events. Không ghép ba store call độc lập rồi gọi đó là transaction. Durable API/format vẫn phải qua ADR thuộc `WP-020`.
+**Resolution:** ADR-0003 đã chốt storage trả typed durable artifact receipt; `control::commit` điều phối một `CommitArtifactCheckpoint` metadata command, sau đó manifest prepare/seal/pointer-CAS/confirm. Implementation phải theo protocol này; không ghép ba store call độc lập rồi gọi đó là transaction.
 
 ### A-03 — Generic ingestion lifecycle chưa có application owner
 
@@ -61,11 +61,11 @@ Architecture nói single-node dùng Tokio cho I/O/lifecycle, nhưng direct Tokio
 
 ### A-06 — ADR baseline chưa hoàn tất
 
-ADR-0001 và ADR-0002 đã accepted. Development plan vẫn yêu cầu các quyết định checkpoint-after-artifact/manifest API, local durability, memory permits và Bronze semantics trước khi implementation tương ứng ổn định.
+ADR-0001 tới ADR-0003 đã accepted, bao gồm event state và artifact/checkpoint/manifest ordering/local durability. Development plan vẫn yêu cầu memory permits và Bronze semantics trước khi implementation tương ứng ổn định.
 
 **Risk:** contributor sẽ encode durable format và correctness contract trong code-only PR.
 
-**Required direction:** ưu tiên ADR-0003 và ADR-0004 theo immediate backlog trước persistence/hot-path parallel implementation.
+**Required direction:** ưu tiên ADR-0004 trước hot-path parallel implementation; mọi persistence work phải trace tới ADR-0002/0003.
 
 ## 4. Khoảng trống delivery/enforcement
 
@@ -93,7 +93,7 @@ Tách các module/crate này sớm sẽ tạo abstraction chưa có evidence và
 ## 6. Thứ tự hành động đề xuất
 
 1. Merge contributor architecture guide và dùng nó trong issue/PR review.
-2. Hoàn tất ADR-0003 commit ordering/manifest và ADR-0004 memory permit; event state đã được chốt trong ADR-0002.
+2. Hoàn tất ADR-0004 memory permit; event state và commit ordering đã được chốt trong ADR-0002/0003.
 3. Thực hiện `WP-100`: durable IDs, shared receipts, canonical hashes, stable errors và curated visibility.
 4. Thực hiện `WP-030`: fixtures, benchmark manifest, fault hooks và architecture enforcement phù hợp actual imports.
 5. Chỉ sau đó mở lane song song cho resource/transport, history/DAG và snapshot/storage theo dependency graph của development plan.

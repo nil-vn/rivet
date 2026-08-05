@@ -19,7 +19,7 @@ Exact resume được định nghĩa theo final visible dataset:
 - Không resume trên source/config/code đã thay đổi.
 - Downstream không thấy partial artifact.
 
-## 2. Event-sourced history
+## 2. Hybrid durable history
 
 ### 2.1 Durable entities
 
@@ -260,21 +260,14 @@ datasets/customers/
 
 ## 8. Commit ordering
 
-Checkpoint không được đi trước sink:
+Commit protocol có ba boundary:
 
 ```text
-Sai:
-    read batch
-    save checkpoint
-    write Parquet
-    crash
+P — physical durability: complete immutable artifact bytes
+M — metadata commit: artifact facts + checkpoint + events + watermark
+V — visibility: publish sealed manifest generation through pointer CAS
 
-Đúng:
-    read safe range
-    write complete Parquet part
-    commit artifact
-    commit checkpoint referencing artifact
-    publish/advance manifest generation
+P < M < V < terminal task transition
 ```
 
 Invariant:
@@ -283,26 +276,28 @@ Invariant:
 Checkpoint.next_offset = N
 ```
 
-chỉ hợp lệ nếu toàn bộ logical records trước `N` đã thuộc committed artifacts hoặc được quarantine theo policy.
+chỉ hợp lệ nếu toàn bộ logical records trước `N` đã thuộc artifacts commit tại boundary `M` hoặc được quarantine theo policy. Artifact committed chưa visible; downstream chỉ thấy artifact sau boundary `V`.
 
-## 9. Local two-phase artifact protocol
+## 9. Local durable artifact protocol
 
 ```text
 1. Create ArtifactIntent(state=Preparing)
 2. Write temporary file under task attempt staging directory
-3. Close Parquet writer and footer
-4. Flush and fsync file
-5. Rename to deterministic immutable path
-6. In one SQLite transaction:
+3. Finish Parquet footer and calculate bounded receipt metadata/hash
+4. Flush and sync file
+5. No-clobber rename to unique immutable path and sync parent directory (P)
+6. In one typed SQLite metadata command (M):
    - mark artifact Committed
    - insert checkpoint
    - append ArtifactCommitted and CheckpointCommitted events
    - advance attempt watermark
-7. Publish dataset manifest generation
-8. Mark task terminal after all required generations commit
+7. Prepare and seal immutable full-snapshot Arrow IPC manifest
+8. Atomically replace current pointer under expected-parent guard (V)
+9. Confirm publication in metadata
+10. Mark task terminal after all required publications are confirmed
 ```
 
-Filesystem và SQLite không có một distributed atomic transaction chung, nên reconciliation là bắt buộc.
+Filesystem và SQLite không có một distributed atomic transaction chung, nên reconciliation là bắt buộc. Durable local profile chỉ support filesystem/mount chứng minh được file sync, same-filesystem atomic rename và parent-directory sync; không silent downgrade sang best effort.
 
 ## 10. Crash matrix
 
@@ -312,23 +307,25 @@ Filesystem và SQLite không có một distributed atomic transaction chung, nê
 | Sau intent, trước temp file | Preparing intent | Mark abandoned/retry |
 | Trong khi ghi temp | Partial staging file | Delete after lease expiry |
 | Sau footer, trước rename | Complete temp file | Validate rồi rename/reuse |
-| Sau rename, trước DB commit | Orphan immutable artifact | Reconcile bằng intent/logical key/hash |
-| Sau artifact/checkpoint DB commit | Durable checkpoint | Resume từ next offset |
-| Sau checkpoint, trước manifest publish | Artifact chưa visible downstream | Republish manifest idempotently |
-| Sau manifest publish | Committed generation | Downstream có thể chạy |
+| Sau rename, trước metadata commit | Orphan immutable artifact | Commit bằng same typed command nếu fence còn hợp lệ; nếu không mark GC candidate |
+| Sau artifact/checkpoint metadata commit | Durable checkpoint, artifact chưa visible | Resume publication; không reprocess range |
+| Sau manifest object, trước seal | Preparing generation/candidate | Verify exact plan/hash rồi seal hoặc abandon |
+| Sau seal, trước pointer CAS | Eligible generation | Retry conditional publish |
+| Sau pointer CAS, trước confirm | Pointer ahead of metadata | Verify rồi confirm idempotently |
+| Sau confirm | Published generation | Downstream có thể đọc; terminal transition mới được phép |
 
 ## 11. Object store commit
 
-Object storage không có atomic rename. Protocol:
+Object storage không có atomic rename. Protocol dùng `object_store` multipart/conditional operations:
 
-1. Ghi immutable part object bằng unique deterministic key.
-2. Complete multipart upload.
-3. Verify size/checksum/metadata.
-4. Ghi immutable manifest generation object.
-5. Conditional update `current` pointer hoặc catalog generation bằng CAS.
-6. Nếu CAS thua, kiểm tra conflict/rebase hoặc abort generation.
+1. Ghi immutable part object vào unique intent key bằng create-only put/multipart.
+2. Finish Parquet footer, complete upload và verify size/opaque version/checksum metadata.
+3. Commit artifact facts/checkpoint/events bằng metadata command `M`.
+4. Stream full-snapshot Arrow IPC manifest từ committed facts rồi seal generation.
+5. Conditional create/update Protobuf `current` pointer bằng exact prior version/ETag.
+6. Confirm publication trong metadata; nếu CAS thua, rebase metadata change set mà không rewrite data artifact.
 
-Reader chỉ đọc objects được manifest committed tham chiếu.
+`ETag` không mặc định là content hash. Reader chỉ đọc objects được current pointer + verified immutable manifest tham chiếu; không list prefix để suy ra snapshot.
 
 ## 12. Lease và fencing
 
@@ -358,13 +355,15 @@ Mọi final commit phải kèm fencing token. Khi lease được cấp lại, to
 4. Reject resume if contract differs
 5. Reconcile Preparing/orphan artifacts
 6. Load latest monotonically committed checkpoint per partition
-7. Verify checkpoint artifacts and manifest references
+7. Verify committed checkpoint artifacts and reconcile publication state
 8. Acquire new lease/fencing token
 9. Resume at safe boundary or replay from decoder anchor
 10. Reprocess only uncommitted range
-11. Commit new immutable artifacts/checkpoints
-12. Publish manifest generation
+11. Commit new immutable artifacts/checkpoints through boundary `M`
+12. Prepare/seal/publish manifest generation, then confirm before scheduling downstream
 ```
+
+Contract đầy đủ của artifact receipt, metadata unit-of-work, manifest format/CAS và crash recovery nằm trong [ADR-0003](decisions/0003-artifact-checkpoint-manifest-ordering.md).
 
 ## 14. Cache reuse
 
@@ -422,6 +421,9 @@ history_commands
 runs_current
 task_attempts_current
 projection_metadata
+artifact_intents_current
+manifest_generations_current
+dataset_publications_current
 schema_migrations
 ```
 
@@ -436,6 +438,7 @@ artifact_intents
 artifacts
 checkpoints
 manifest_generations
+manifest_generation_changes
 executor_leases
 ```
 
@@ -449,12 +452,13 @@ command_id UNIQUE with immutable command_hash
 (run_id, task_id, partition_id, checkpoint_sequence) UNIQUE
 (logical_artifact_key) UNIQUE
 (dataset_id, generation) UNIQUE
+(dataset_id) PRIMARY KEY in dataset_publications_current
 (lease_id, fencing_token) UNIQUE
 ```
 
-Current run/task/attempt state chỉ được materializer update và phải rebuild deterministic từ event ledger. Unknown event kind/version làm controller không writable-ready; không skip rồi tiếp tục projection.
+Current run/task/attempt/intent/manifest-publication state chỉ được materializer/typed metadata command update và phải rebuild deterministic từ supported event/fact history. Unknown event kind/version làm controller không writable-ready; không skip rồi tiếp tục projection.
 
-Multi-node không được tăng DB write rate theo batch/row. Checkpoint/event granularity nằm ở part/range level. Chi tiết transaction, idempotency, replay, migration và SQLite operating contract nằm trong [ADR-0002](decisions/0002-event-store-materialized-state.md).
+Multi-node không được tăng DB write rate theo batch/row. Checkpoint/event granularity nằm ở part/range level. Chi tiết transaction, idempotency, replay, migration và SQLite operating contract nằm trong [ADR-0002](decisions/0002-event-store-materialized-state.md); artifact/checkpoint/manifest unit-of-work nằm trong [ADR-0003](decisions/0003-artifact-checkpoint-manifest-ordering.md).
 
 ## 17. Audit API/CLI
 
@@ -484,4 +488,4 @@ API phải trả:
 - Artifact chỉ được xóa khi không còn manifest, checkpoint hoặc legal hold tham chiếu.
 - Staging file chỉ xóa sau lease expiry và reconciliation grace period.
 - Raw snapshots có policy riêng; xóa raw làm mất khả năng full replay và phải được audit.
-- Garbage collection là mark-and-sweep từ committed manifests/checkpoints, không dựa vào filename age đơn thuần.
+- Garbage collection là mark-and-sweep từ current/retained manifests, committed checkpoints, active intents và legal holds; không dựa vào filename age đơn thuần.

@@ -92,7 +92,7 @@ Khi hai module cần nhau, di chuyển phần giao nhau về đúng contract own
 - DTO dành riêng cho HTTP, Flight hoặc gRPC ở adapter boundary; không đưa DTO đó vào durable domain model.
 - Không đặt `NodeIndex`, DataFusion execution-plan node, SQLite row type hoặc Protobuf-generated type trong durable public model.
 
-Ví dụ: checkpoint cần tham chiếu artifact bằng `ArtifactId`/`ArtifactRef` trong `core`; nó không import local Parquet writer. Commit coordinator nhận storage receipt rồi dùng một metadata unit-of-work để atomically ghi artifact state, checkpoint và events. Owner/format của unit-of-work phải được chốt trong ADR; không mô phỏng transaction bằng ba lời gọi độc lập.
+Ví dụ: checkpoint cần tham chiếu artifact bằng `ArtifactId`/`ArtifactRef` trong `core`; nó không import local Parquet writer. Commit coordinator nhận storage receipt rồi dùng typed metadata command để atomically ghi artifact state, checkpoint và events theo [ADR-0003](../decisions/0003-artifact-checkpoint-manifest-ordering.md); không mô phỏng transaction bằng ba lời gọi độc lập.
 
 ## 4. Contract của từng scaffold module
 
@@ -131,13 +131,13 @@ Sở hữu append-only event contract, event-store port, materializer, timeline/
 
 Không ghi event theo row/batch và không lưu raw rejects trong control database. Concrete filesystem cleanup được gọi qua storage port; history không tự mở/xóa arbitrary path.
 
-Event ledger, idempotency, projection và SQLite local contract phải tuân thủ [ADR-0002](../decisions/0002-event-store-materialized-state.md).
+Event ledger, idempotency, projection và SQLite local contract phải tuân thủ [ADR-0002](../decisions/0002-event-store-materialized-state.md). Typed artifact/checkpoint/manifest fact commands phải tuân thủ [ADR-0003](../decisions/0003-artifact-checkpoint-manifest-ordering.md).
 
 ### `checkpoint`
 
 Sở hữu `ResumeContract`, partition checkpoint, candidate/durable watermark distinction, checkpoint-store port và recovery validation.
 
-Module này không được tự xem một progress watermark là durable. API commit checkpoint phải yêu cầu evidence/reference của committed artifact và fencing generation. Việc publish manifest vẫn là bước riêng sau artifact/checkpoint commit.
+Module này không được tự xem một progress watermark là durable. Checkpoint validator tạo proposal/coverage evidence; `control::commit` chỉ commit proposal cùng durable artifact receipt và fencing generation qua ADR-0003. Việc publish manifest vẫn là state machine riêng sau metadata commit.
 
 ### `discovery`
 
@@ -152,9 +152,9 @@ Sở hữu:
 - Object-store registry và secure URI/path resolution.
 - Raw-zone snapshot mechanics, streaming/range readers và temp quota.
 - Parquet writer/reader, artifact intent/immutable rename/object commit mechanics.
-- Manifest format/generation/CAS adapter và storage-side reconciliation operations.
+- Full-snapshot Arrow IPC manifest codec, Protobuf current-pointer CAS adapter và storage-side reconciliation operations theo ADR-0003.
 
-Storage không tự advance checkpoint hoặc mark task succeeded. Nó trả typed receipt để commit coordinator kiểm tra. Reader chỉ mở object được committed manifest tham chiếu.
+Storage không tự advance checkpoint hoặc mark task succeeded. Nó trả typed durable receipt sau Parquet/storage completion để commit coordinator kiểm tra. Reader chỉ mở object được current pointer + verified immutable manifest tham chiếu; không list prefix để suy ra snapshot.
 
 ### `transport`
 
@@ -184,7 +184,7 @@ Sở hữu application orchestration và controller/executor lifecycle:
 
 - Controller: pipeline/run/task commands, metadata scheduling, registry, lease/heartbeat/fencing và commit authorization.
 - Executor: trực tiếp chạy source/compute/plugin/sink use case trong resource envelope.
-- Commit coordinator: phối hợp storage receipt với metadata unit-of-work bao trùm artifact state, history và checkpoint.
+- Commit coordinator: phối hợp storage receipt với typed metadata command bao trùm artifact state, history và checkpoint; sau đó điều phối manifest prepare/seal/CAS/confirm theo ADR-0003.
 - Distributed control protocol: versioned metadata messages, không chứa tabular payload.
 
 Đây là nơi phù hợp cho local ingestion application service ban đầu. Chỉ tạo top-level `ingestion` module nếu scope/ownership đã đủ lớn và được design review; không tạo để né dependency rule.
@@ -239,8 +239,9 @@ cli/serving command
     → storage writes immutable Parquet/reject artifacts
     → control commit coordinator validates fencing
     → atomic metadata transaction records artifact + checkpoint + events
-    → storage publishes manifest generation
-    → history marks terminal state
+    → storage streams and seals full-snapshot manifest generation
+    → storage publishes current pointer with expected-parent CAS
+    → history confirms publication and only then marks terminal state
 ```
 
 Không checkpoint trước artifact receipt. Không để `plugins::csv` publish manifest. Không để controller nhận batches trong distributed mode.
@@ -322,8 +323,6 @@ Trước khi code:
 
 Các mục sau vẫn cần spike/ADR trước implementation production:
 
-- Artifact/checkpoint/manifest commit API và local fsync guarantees.
-- Manifest serialization format.
 - Memory permit/accounting API.
 - Raw/Bronze/Silver durable schema.
 - Shared auth/policy contract nếu vượt protocol middleware.

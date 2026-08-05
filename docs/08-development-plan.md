@@ -23,6 +23,7 @@ Trạng thái thực thi ngày 2026-08-05:
 - `WP-010` đã pass local/Flight SQL/S3/Wasm/Python/distributed compile và Ballista standalone loopback query; PyArrow round trip và Ballista multi-process remote query còn mở.
 - `ADR-0001` đã khóa dependency BOM/MSRV baseline.
 - `ADR-0002` đã chốt hybrid event ledger, immutable fact ledgers và synchronous transactional materialized state.
+- `ADR-0003` đã chốt physical durability → atomic metadata commit → manifest pointer CAS, cùng Arrow IPC full-snapshot manifest và Protobuf pointer.
 
 ## 2. Kết quả delivery
 
@@ -592,21 +593,22 @@ Open question chưa đủ evidence phải có spike owner và decision deadline 
 - Artifact intent/state persistence.
 - Canonical resume contract và mismatch diagnostics.
 - Partition checkpoint store.
-- Commit transaction gắn artifact, checkpoint, events và watermark.
+- Typed `CommitArtifactCheckpoint` metadata command gắn artifact, checkpoint, events và watermark theo ADR-0003.
 - Fencing-token validation.
 
 **Acceptance**
 
 - Checkpoint không thể commit nếu artifact chưa committed.
-- Duplicate logical key cùng content idempotent; khác content bị báo corruption/nondeterminism.
+- Exact retry hoặc approved reuse của cùng logical key/content là idempotent; khác content bị báo corruption/nondeterminism.
 - Crash trước/sau mọi boundary cho kết quả không gap/duplicate visible records.
+- Không filesystem/object-store I/O bên trong SQLite transaction.
 
 ### `WP-420` — dataset manifest và reconciliation
 
 **Deliverables**
 
-- Versioned manifest generation.
-- Atomic local publication.
+- Versioned full-snapshot Arrow IPC manifest generation và bounded streaming codec.
+- Bounded Protobuf current pointer; atomic local replace/parent sync và object-store conditional CAS.
 - Reconciler cho intent/temp/orphan/committed-not-published states.
 - Mark-and-sweep roots từ manifest/checkpoint.
 - Dry-run và audited cleanup.
@@ -614,7 +616,9 @@ Open question chưa đủ evidence phải có spike owner và decision deadline 
 **Acceptance**
 
 - Toàn bộ crash matrix trong history document được tự động hóa.
-- Reader chỉ thấy committed generation.
+- Reader chỉ thấy generation do valid current pointer chọn và generation đó chỉ tham chiếu committed artifacts.
+- Pointer-ahead-of-metadata được confirm idempotently trước writable readiness.
+- CAS loser rebase metadata change set, không rewrite committed artifact.
 - Reconcile lặp lại idempotent.
 - GC không xóa artifact đang được retained manifest/checkpoint tham chiếu.
 
@@ -1171,7 +1175,7 @@ Giả định iteration hai tuần và team bốn người. Đây là sequencing
 - `WP-001` project/bootstrap.
 - `WP-010` local/BOM compile spike.
 - `WP-030` CI và fixture-generator skeleton.
-- Draft ADR BOM/event/checkpoint/memory.
+- Accept baseline ADRs cho BOM/event/checkpoint; draft memory-permit ADR.
 
 ### Iteration 2 — contracts
 
@@ -1287,13 +1291,12 @@ Thứ tự issue nên mở đầu tiên:
 
 1. `WP-000`: trước public launch, hoàn tất trademark, public identities và security contacts.
 2. `WP-010`: PyArrow round trip và Ballista remote multi-process query spikes; distributed compile/standalone loopback đã pass.
-3. `WP-020`: ADR-0003 artifact/checkpoint/manifest ordering.
-4. `WP-020`: ADR-0004 memory permits/resource budget.
-5. `WP-030`: deterministic CSV fixture generator.
-6. `WP-030`: benchmark manifest/harness.
-7. `WP-100`: durable IDs, canonical hashing và error codes.
-8. `WP-110`: byte-accounted memory permit pool.
-9. `WP-200`: SQLite migration/event store skeleton theo accepted ADR-0002.
+3. `WP-020`: ADR-0004 memory permits/resource budget.
+4. `WP-030`: deterministic CSV fixture generator.
+5. `WP-030`: benchmark manifest/harness.
+6. `WP-100`: durable IDs, canonical hashing và error codes theo ADR-0002/0003.
+7. `WP-110`: byte-accounted memory permit pool.
+8. `WP-200`: SQLite migration/event store skeleton theo accepted ADR-0002/0003.
 
 Không bắt đầu Ballista customization, arbitrary native dynamic plugins hoặc HA consensus trong immediate backlog.
 
