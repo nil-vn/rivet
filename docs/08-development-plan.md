@@ -22,6 +22,7 @@ Trạng thái thực thi ngày 2026-08-05:
 - `WP-001` scaffold đã được thiết lập.
 - `WP-010` đã pass local/Flight SQL/S3/Wasm/Python/distributed compile và Ballista standalone loopback query; PyArrow round trip và Ballista multi-process remote query còn mở.
 - `ADR-0001` đã khóa dependency BOM/MSRV baseline.
+- `ADR-0002` đã chốt hybrid event ledger, immutable fact ledgers và synchronous transactional materialized state.
 
 ## 2. Kết quả delivery
 
@@ -1286,14 +1287,13 @@ Thứ tự issue nên mở đầu tiên:
 
 1. `WP-000`: trước public launch, hoàn tất trademark, public identities và security contacts.
 2. `WP-010`: PyArrow round trip và Ballista remote multi-process query spikes; distributed compile/standalone loopback đã pass.
-3. `WP-020`: ADR-0002 event/materialized state.
-4. `WP-020`: ADR-0003 artifact/checkpoint/manifest ordering.
-5. `WP-020`: ADR-0004 memory permits/resource budget.
-6. `WP-030`: deterministic CSV fixture generator.
-7. `WP-030`: benchmark manifest/harness.
-8. `WP-100`: durable IDs, canonical hashing và error codes.
-9. `WP-110`: byte-accounted memory permit pool.
-10. `WP-200`: SQLite migration/event store skeleton.
+3. `WP-020`: ADR-0003 artifact/checkpoint/manifest ordering.
+4. `WP-020`: ADR-0004 memory permits/resource budget.
+5. `WP-030`: deterministic CSV fixture generator.
+6. `WP-030`: benchmark manifest/harness.
+7. `WP-100`: durable IDs, canonical hashing và error codes.
+8. `WP-110`: byte-accounted memory permit pool.
+9. `WP-200`: SQLite migration/event store skeleton theo accepted ADR-0002.
 
 Không bắt đầu Ballista customization, arbitrary native dynamic plugins hoặc HA consensus trong immediate backlog.
 

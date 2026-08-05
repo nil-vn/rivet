@@ -131,6 +131,8 @@ Sở hữu append-only event contract, event-store port, materializer, timeline/
 
 Không ghi event theo row/batch và không lưu raw rejects trong control database. Concrete filesystem cleanup được gọi qua storage port; history không tự mở/xóa arbitrary path.
 
+Event ledger, idempotency, projection và SQLite local contract phải tuân thủ [ADR-0002](../decisions/0002-event-store-materialized-state.md).
+
 ### `checkpoint`
 
 Sở hữu `ResumeContract`, partition checkpoint, candidate/durable watermark distinction, checkpoint-store port và recovery validation.
@@ -320,7 +322,6 @@ Trước khi code:
 
 Các mục sau vẫn cần spike/ADR trước implementation production:
 
-- Event store/materialized-state format và transaction API.
 - Artifact/checkpoint/manifest commit API và local fsync guarantees.
 - Manifest serialization format.
 - Memory permit/accounting API.

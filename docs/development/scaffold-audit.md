@@ -59,13 +59,13 @@ Architecture nói single-node dùng Tokio cho I/O/lifecycle, nhưng direct Tokio
 
 **Required direction:** chốt runtime ownership và feature mapping trước `WP-110`/`WP-120` implementation; cập nhật ADR-0001 hoặc superseding ADR nếu supported profile contract thay đổi.
 
-### A-06 — ADR baseline còn thiếu
+### A-06 — ADR baseline chưa hoàn tất
 
-Chỉ ADR-0001 đã accepted. Development plan yêu cầu các quyết định event/materialized state, checkpoint-after-artifact API, manifest format, local durability, memory permits và Bronze semantics trước khi implementation tương ứng ổn định.
+ADR-0001 và ADR-0002 đã accepted. Development plan vẫn yêu cầu các quyết định checkpoint-after-artifact/manifest API, local durability, memory permits và Bronze semantics trước khi implementation tương ứng ổn định.
 
 **Risk:** contributor sẽ encode durable format và correctness contract trong code-only PR.
 
-**Required direction:** ưu tiên ADR-0002 trở đi theo immediate backlog trước persistence/hot-path parallel implementation.
+**Required direction:** ưu tiên ADR-0003 và ADR-0004 theo immediate backlog trước persistence/hot-path parallel implementation.
 
 ## 4. Khoảng trống delivery/enforcement
 
@@ -93,7 +93,7 @@ Tách các module/crate này sớm sẽ tạo abstraction chưa có evidence và
 ## 6. Thứ tự hành động đề xuất
 
 1. Merge contributor architecture guide và dùng nó trong issue/PR review.
-2. Hoàn tất ADR baseline cho event state, commit ordering/manifest và memory permit.
+2. Hoàn tất ADR-0003 commit ordering/manifest và ADR-0004 memory permit; event state đã được chốt trong ADR-0002.
 3. Thực hiện `WP-100`: durable IDs, shared receipts, canonical hashes, stable errors và curated visibility.
 4. Thực hiện `WP-030`: fixtures, benchmark manifest, fault hooks và architecture enforcement phù hợp actual imports.
 5. Chỉ sau đó mở lane song song cho resource/transport, history/DAG và snapshot/storage theo dependency graph của development plan.

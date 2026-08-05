@@ -28,7 +28,7 @@ Exact resume được định nghĩa theo final visible dataset:
 | `PipelineDefinitionVersion` | pipeline ID + version | Immutable DAG spec và hash |
 | `Run` | run ID | Trigger, definition version, state |
 | `TaskAttempt` | run + task + attempt | Lease, executor, resource, outcome |
-| `TaskEvent` | attempt + sequence | Append-only lifecycle event |
+| `HistoryEvent` | stream + sequence | Append-only lifecycle event |
 | `SourceSnapshot` | snapshot ID | URI, fingerprint, immutable location |
 | `SourceSegment` | segment ID | Raw range, encoding, dialect, header, schema |
 | `Artifact` | artifact ID | URI, content hash, range, schema, lineage |
@@ -68,21 +68,37 @@ Event database không nhận event cho từng row hoặc từng batch nhỏ. Pro
 ### 2.3 Event contract
 
 ```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HistoryStreamKey {
+    Run {
+        run_id: RunId,
+    },
+    TaskAttempt {
+        run_id: RunId,
+        task_id: TaskId,
+        attempt: u16,
+    },
+}
+
 #[derive(Debug, Clone)]
-pub struct TaskEvent {
-    pub event_id: String,
-    pub run_id: String,
-    pub task_id: String,
-    pub attempt: u16,
-    pub sequence: u64,
+pub struct HistoryEvent {
+    pub event_id: EventId,
+    pub command_id: CommandId,
+    pub stream: HistoryStreamKey,
+    pub stream_sequence: u64,
+    pub commit_revision: u64,
+    pub event_ordinal: u32,
     pub occurred_at_micros: i64,
-    pub kind: TaskEventKind,
+    pub kind_code: u32,
     pub payload_version: u32,
     pub payload: Vec<u8>,
+    pub payload_hash: String,
 }
 ```
 
-`payload` dùng Protobuf. Unknown event version phải được preserve ngay cả khi materializer chưa hiểu.
+`payload` dùng Protobuf. Unknown event version phải được preserve ngay cả khi materializer chưa hiểu. `stream_sequence` là ordering/CAS trong một stream; `(commit_revision, event_ordinal)` là global replay order trong controller database. Timestamp chỉ dùng cho audit/display, không quyết định thứ tự.
+
+Writer gán event identity/ordering fields trong lần execute đầu tiên. Exact retry dùng cùng `command_id` và canonical command hash để lấy lại durable receipt, không append event mới. Contract đầy đủ nằm trong [ADR-0002](decisions/0002-event-store-materialized-state.md).
 
 ## 3. Task state machine
 
@@ -396,15 +412,23 @@ History event chỉ lưu reject count, artifact ID, reason histogram và source 
 
 ## 16. Materialized state và database
 
-SQLite MVP dùng WAL và một serialized writer task. Event append và state transition nằm cùng DB transaction.
+SQLite MVP dùng WAL, `synchronous=FULL` và một serialized writer worker có bounded command/byte queue. Event append, allowed immutable facts, materialized transition và idempotency receipt nằm cùng metadata transaction.
 
-Logical tables:
+Lifecycle ledger và projections:
+
+```text
+history_events
+history_commands
+runs_current
+task_attempts_current
+projection_metadata
+schema_migrations
+```
+
+Immutable fact ledgers do domain contract sở hữu:
 
 ```text
 pipeline_definitions
-runs
-task_attempts
-task_events
 source_snapshots
 source_segments
 schema_versions
@@ -418,14 +442,19 @@ executor_leases
 Index quan trọng:
 
 ```text
-(run_id, task_id, attempt, sequence) UNIQUE
+event_id UNIQUE
+(stream_kind, stream_id, stream_sequence) UNIQUE
+(commit_revision, event_ordinal) UNIQUE
+command_id UNIQUE with immutable command_hash
 (run_id, task_id, partition_id, checkpoint_sequence) UNIQUE
 (logical_artifact_key) UNIQUE
 (dataset_id, generation) UNIQUE
 (lease_id, fencing_token) UNIQUE
 ```
 
-Multi-node không được tăng DB write rate theo batch/row. Checkpoint/event granularity nằm ở part/range level.
+Current run/task/attempt state chỉ được materializer update và phải rebuild deterministic từ event ledger. Unknown event kind/version làm controller không writable-ready; không skip rồi tiếp tục projection.
+
+Multi-node không được tăng DB write rate theo batch/row. Checkpoint/event granularity nằm ở part/range level. Chi tiết transaction, idempotency, replay, migration và SQLite operating contract nằm trong [ADR-0002](decisions/0002-event-store-materialized-state.md).
 
 ## 17. Audit API/CLI
 
